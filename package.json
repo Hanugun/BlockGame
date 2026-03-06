@@ -1,0 +1,52 @@
+{
+  "name": "aquawetrix",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run build:core && concurrently -c auto -n core,server,client \"npm:dev:core:watch\" \"npm:dev:server:only\" \"npm:dev:client:only\"",
+    "dev:client": "npm run build:core && npm --workspace @aquawetrix/client run dev",
+    "dev:client:only": "npm --workspace @aquawetrix/client run dev",
+    "dev:core": "npm run build:core && npm --workspace @aquawetrix/core run dev",
+    "dev:core:watch": "npm --workspace @aquawetrix/core run dev",
+    "dev:server": "npm run build:core && npm --workspace @aquawetrix/server run dev",
+    "dev:server:only": "npm --workspace @aquawetrix/server run dev",
+    "build": "npm run clean && npm run build:core && npm run build:server && npm run build:client",
+    "build:client": "npm --workspace @aquawetrix/client run build",
+    "build:core": "npm --workspace @aquawetrix/core run build",
+    "build:server": "npm --workspace @aquawetrix/server run build",
+    "clean": "rimraf apps/client/dist apps/client/tsconfig.tsbuildinfo apps/server/dist apps/server/tsconfig.tsbuildinfo packages/core/dist packages/core/tsconfig.tsbuildinfo coverage tempdist tsconfig.tsbuildinfo",
+    "capture:reference": "node ./scripts/capture-reference-frames.mjs",
+    "assets:procedural": "node ./scripts/generate-procedural-aqua-assets.mjs",
+    "parity:check": "node ./scripts/run-parity-check.mjs",
+    "lint": "eslint \"apps/**/*.ts\" \"apps/**/*.tsx\" \"packages/**/*.ts\" --ignore-pattern \"packages/core/src/**/*.test.ts\"",
+    "test": "vitest run --coverage",
+    "download:assets": "node ./scripts/download-assets.mjs"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.39.3",
+    "@types/node": "25.3.3",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "@types/three": "^0.183.1",
+    "@types/ws": "8.18.1",
+    "@vitejs/plugin-react": "5.1.4",
+    "@vitest/coverage-v8": "4.0.18",
+    "concurrently": "9.2.1",
+    "eslint": "9.39.3",
+    "eslint-plugin-react-hooks": "7.0.1",
+    "eslint-plugin-react-refresh": "0.5.2",
+    "globals": "17.4.0",
+    "playwright": "^1.58.2",
+    "rimraf": "6.1.3",
+    "tsx": "4.21.0",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.56.1",
+    "vite": "7.3.1",
+    "vitest": "4.0.18"
+  }
+}

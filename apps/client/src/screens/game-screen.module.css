@@ -1,0 +1,71 @@
+.viewport {
+  position: relative;
+  width: 100%;
+  min-height: 100dvh;
+  overflow: hidden;
+}
+
+.waiting {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.waitingCard {
+  width: min(34rem, calc(100vw - 2rem));
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: var(--surface);
+  padding: 1rem;
+  display: grid;
+  gap: 0.7rem;
+}
+
+.kicker {
+  margin: 0;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.72rem;
+}
+
+.waitingCard h1 {
+  margin: 0;
+  font-family: var(--font-display);
+}
+
+.waitingCard p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  display: grid;
+  align-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem;
+}
+
+.overlay > * {
+  pointer-events: auto;
+}
+
+.overlaySolo {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.overlaySolo > * {
+  pointer-events: auto;
+}
+
+@media (max-width: 800px) {
+  .overlay {
+    padding: 0.55rem;
+  }
+}

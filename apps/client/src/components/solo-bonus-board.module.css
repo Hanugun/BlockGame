@@ -1,0 +1,103 @@
+.shell {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.7rem;
+}
+
+.heading p {
+  margin: 0;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.7rem;
+}
+
+.heading h4 {
+  margin: 0.2rem 0 0;
+  font-size: 1rem;
+}
+
+.heading span {
+  color: var(--muted);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.35rem;
+}
+
+.cell {
+  aspect-ratio: 1;
+  border-radius: 0.45rem;
+  border: 1px solid var(--line-soft);
+  background: var(--surface-soft);
+  display: grid;
+  place-items: center;
+  color: var(--text);
+  font-weight: 700;
+}
+
+.claimed {
+  border-color: var(--focus);
+}
+
+.active {
+  box-shadow: 0 0 0 1px var(--focus) inset;
+}
+
+.meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.activeList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.pill {
+  border-radius: 999px;
+  border: 1px solid var(--line-soft);
+  background: var(--surface-soft);
+  padding: 0.35rem 0.55rem;
+  display: inline-flex;
+  gap: 0.45rem;
+  align-items: center;
+  font-size: 0.78rem;
+}
+
+.pill span {
+  color: var(--muted);
+}
+
+.legend {
+  border-top: 1px solid var(--line-soft);
+  padding-top: 0.45rem;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.legend strong {
+  font-size: 0.8rem;
+}
+
+.legend ul {
+  margin: 0;
+  padding-left: 1rem;
+  color: var(--muted);
+  display: grid;
+  gap: 0.15rem;
+  font-size: 0.74rem;
+}

@@ -1,0 +1,55 @@
+.shell {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.7rem;
+}
+
+.heading p {
+  margin: 0;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.7rem;
+}
+
+.heading h4 {
+  margin: 0.2rem 0 0;
+  font-size: 1rem;
+}
+
+.heading span {
+  color: var(--muted);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.35rem;
+}
+
+.cell {
+  aspect-ratio: 1;
+  border-radius: 0.45rem;
+  border: 1px solid var(--line-soft);
+  background: var(--surface-soft);
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+}
+
+.local {
+  color: var(--focus);
+}
+
+.rival {
+  color: var(--warn);
+}
+
+.active {
+  box-shadow: 0 0 0 1px var(--text) inset;
+}

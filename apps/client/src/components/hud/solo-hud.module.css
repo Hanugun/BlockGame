@@ -1,0 +1,165 @@
+.root {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.leftCluster {
+  position: absolute;
+  left: 1.2rem;
+  top: 1.1rem;
+  display: grid;
+  gap: 0.65rem;
+  pointer-events: auto;
+}
+
+.scoreBlock {
+  min-width: 8.5rem;
+  padding: 0.3rem 0.4rem;
+  color: #64b7ff;
+  text-shadow: 0 0 6px rgba(18, 121, 230, 0.34);
+}
+
+.scoreValue {
+  margin: 0;
+  font-size: 2.9rem;
+  line-height: 1;
+  font-weight: 700;
+}
+
+.statLine {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.05rem;
+  color: #7cd7ff;
+}
+
+.label {
+  font-size: 0.92rem;
+  opacity: 0.9;
+}
+
+.miniGridWrap {
+  padding: 0.2rem;
+}
+
+.miniGrid {
+  width: 9.4rem;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 2px;
+  border: 2px solid rgba(10, 22, 41, 0.72);
+  background: rgba(4, 18, 34, 0.75);
+  box-shadow: 0 0 0 2px rgba(50, 106, 170, 0.38);
+}
+
+.gridCell {
+  aspect-ratio: 1;
+  background: linear-gradient(180deg, rgba(121, 201, 255, 0.56), rgba(47, 105, 163, 0.72));
+  border: 1px solid rgba(16, 40, 64, 0.8);
+}
+
+.gridCellPrimed {
+  background: linear-gradient(180deg, rgba(147, 221, 255, 0.82), rgba(66, 142, 207, 0.88));
+}
+
+.gridCellActive {
+  background: linear-gradient(180deg, rgba(255, 250, 196, 0.94), rgba(255, 198, 112, 0.96));
+  border-color: rgba(96, 54, 28, 0.9);
+}
+
+.topRight {
+  position: absolute;
+  right: 4.7rem;
+  top: 1.1rem;
+  display: grid;
+  gap: 0.5rem;
+  justify-items: end;
+  pointer-events: auto;
+}
+
+.menuButton {
+  border: 1px solid rgba(175, 193, 233, 0.68);
+  border-radius: 999px;
+  background: rgba(37, 52, 95, 0.72);
+  color: #f4f8ff;
+  font-size: 0.86rem;
+  padding: 0.26rem 0.7rem;
+  cursor: pointer;
+}
+
+.phasePill {
+  padding: 0.18rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(69, 43, 125, 0.62);
+  color: #c1f8ff;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.reservoir {
+  position: absolute;
+  right: 1rem;
+  top: 0.9rem;
+  width: 3.5rem;
+  display: grid;
+  justify-items: center;
+  gap: 0.28rem;
+  pointer-events: auto;
+}
+
+.kicker {
+  margin: 0;
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  color: #b8d9ff;
+}
+
+.tube {
+  width: 1.5rem;
+  height: min(17rem, 62vh);
+  border-radius: 999px;
+  border: 2px solid rgba(191, 226, 255, 0.8);
+  background: linear-gradient(180deg, rgba(45, 79, 126, 0.36), rgba(12, 30, 55, 0.86));
+  padding: 0.13rem;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.35);
+}
+
+.tubeFill {
+  width: 100%;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(145, 226, 255, 0.95), rgba(42, 120, 192, 0.94));
+  transition: height 120ms linear;
+}
+
+.percent {
+  font-size: 1.1rem;
+  color: #f1fcff;
+  text-shadow: 0 0 10px rgba(95, 184, 255, 0.52);
+}
+
+.leak {
+  margin: 0;
+  font-size: 0.68rem;
+  color: #cfe6ff;
+  text-align: center;
+}
+
+@media (max-width: 900px) {
+  .scoreValue {
+    font-size: 2.2rem;
+  }
+
+  .miniGrid {
+    width: 7.6rem;
+  }
+
+  .tube {
+    height: min(13.5rem, 52vh);
+  }
+}

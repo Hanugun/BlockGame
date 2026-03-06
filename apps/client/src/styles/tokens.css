@@ -1,0 +1,40 @@
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Sora:wght@400;500;600;700&display=swap');
+
+:root {
+  color-scheme: dark;
+  --font-display: 'Rajdhani', 'Segoe UI', sans-serif;
+  --font-body: 'Sora', 'Segoe UI', sans-serif;
+
+  --bg: #0b0f14;
+  --surface: rgba(20, 25, 34, 0.88);
+  --surface-strong: rgba(27, 33, 44, 0.94);
+  --surface-soft: rgba(34, 40, 55, 0.5);
+  --line: rgba(164, 186, 230, 0.32);
+  --line-soft: rgba(164, 186, 230, 0.22);
+
+  --text: #eff4ff;
+  --muted: #a7b5cf;
+  --focus: #7ab6ff;
+  --ok: #7be8a2;
+  --warn: #ffc36d;
+  --danger: #ff6b7d;
+}
+
+html[data-contrast='high'] {
+  --surface: rgba(15, 19, 27, 0.95);
+  --surface-strong: rgba(19, 23, 34, 0.98);
+  --surface-soft: rgba(42, 48, 66, 0.7);
+  --line: rgba(235, 242, 255, 0.56);
+  --line-soft: rgba(235, 242, 255, 0.4);
+  --muted: #d5e1fb;
+  --focus: #8ec2ff;
+}
+
+html[data-motion='reduced'] *,
+html[data-motion='reduced'] *::before,
+html[data-motion='reduced'] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}

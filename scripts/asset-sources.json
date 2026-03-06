@@ -1,0 +1,22 @@
+{
+  "water": {
+    "url": "https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/waves.svg",
+    "license": "ISC",
+    "source": "https://github.com/lucide-icons/lucide"
+  },
+  "bomb": {
+    "url": "https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/bomb.svg",
+    "license": "ISC",
+    "source": "https://github.com/lucide-icons/lucide"
+  },
+  "fire": {
+    "url": "https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/flame.svg",
+    "license": "ISC",
+    "source": "https://github.com/lucide-icons/lucide"
+  },
+  "ice": {
+    "url": "https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/snowflake.svg",
+    "license": "ISC",
+    "source": "https://github.com/lucide-icons/lucide"
+  }
+}

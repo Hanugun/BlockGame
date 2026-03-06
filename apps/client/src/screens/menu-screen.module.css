@@ -1,0 +1,95 @@
+.shell {
+  min-height: 100dvh;
+  display: grid;
+  align-content: center;
+  gap: 1.5rem;
+  padding: clamp(1rem, 3vw, 2rem);
+}
+
+.header {
+  max-width: 64rem;
+  margin: 0 auto;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.kicker {
+  margin: 0;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.72rem;
+}
+
+.header h1 {
+  margin: 0.45rem 0 0.35rem;
+  font-family: var(--font-display);
+  font-size: clamp(2.1rem, 6vw, 3.4rem);
+  line-height: 0.95;
+}
+
+.pilot {
+  margin: 0;
+  color: var(--muted);
+}
+
+.actions {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.grid {
+  max-width: 64rem;
+  width: 100%;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.modeCard {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: 1rem;
+  color: inherit;
+  text-align: left;
+  padding: 1rem;
+  display: grid;
+  gap: 0.4rem;
+  transition: border-color 150ms ease, transform 150ms ease, background 150ms ease;
+}
+
+.modeCard strong {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.modeCard span {
+  color: var(--muted);
+}
+
+.modeCard:hover,
+.modeCard:focus-visible {
+  border-color: var(--focus);
+  background: var(--surface-strong);
+  transform: translateY(-2px);
+}
+
+@media (max-width: 860px) {
+  .header {
+    flex-direction: column;
+  }
+
+  .actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
