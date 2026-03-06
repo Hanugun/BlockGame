@@ -92,6 +92,7 @@ export class BattleScene extends Phaser.Scene {
   private pushEffects(previous: MatchState, current: MatchState): void {
     const now = this.getNow();
     for (const slot of [0, 1] as const) {
+      const slotFeedback = this.feedback[slot]!;
       const previousPiece = previous.players[slot].activePiece;
       const currentPiece = current.players[slot].activePiece;
       const events = current.events.filter((candidate) => candidate.slot === slot);
@@ -116,8 +117,8 @@ export class BattleScene extends Phaser.Scene {
           y: (current.players[slot].board.height - 1) * 0.5,
         };
         if (event.type === 'attack_impact' || event.type === 'storm_pulse' || event.type === 'earthquake') {
-          this.feedback[slot].shakeUntil = Math.max(this.feedback[slot].shakeUntil, now + (this.model.reducedMotion ? 90 : 260));
-          this.feedback[slot].warningUntil = Math.max(this.feedback[slot].warningUntil, now + 450);
+          slotFeedback.shakeUntil = Math.max(slotFeedback.shakeUntil, now + (this.model.reducedMotion ? 90 : 260));
+          slotFeedback.warningUntil = Math.max(slotFeedback.warningUntil, now + 450);
           this.bursts.push({
             slot,
             center,
@@ -128,13 +129,13 @@ export class BattleScene extends Phaser.Scene {
           });
         }
         if (event.type === 'lake_stabilized' || event.type === 'lake_captured' || event.type === 'combo_extended' || event.type === 'bonus_claim') {
-          this.feedback[slot].captureUntil = Math.max(this.feedback[slot].captureUntil, now + 480);
+          slotFeedback.captureUntil = Math.max(slotFeedback.captureUntil, now + 480);
         }
         if (event.type === 'objective_completed' || event.type === 'bonus_triggered') {
-          this.feedback[slot].objectiveUntil = Math.max(this.feedback[slot].objectiveUntil, now + 520);
+          slotFeedback.objectiveUntil = Math.max(slotFeedback.objectiveUntil, now + 520);
         }
         if (event.type === 'bingo_scored') {
-          this.feedback[slot].objectiveUntil = Math.max(this.feedback[slot].objectiveUntil, now + 760);
+          slotFeedback.objectiveUntil = Math.max(slotFeedback.objectiveUntil, now + 760);
           this.bursts.push({
             slot,
             center,
@@ -234,10 +235,12 @@ export class BattleScene extends Phaser.Scene {
       for (const slot of [0, 1] as const) {
         const player = snapshot.players[slot];
         const previousPlayer = previous.players[slot];
-        const shake = this.feedback[slot].shakeUntil > now && !this.model.reducedMotion
+        const slotFeedback = this.feedback[slot]!;
+        const origin = origins[slot]!;
+        const shake = slotFeedback.shakeUntil > now && !this.model.reducedMotion
           ? {
-              x: Math.sin(now * 0.08 + slot) * 6 * clamp01((this.feedback[slot].shakeUntil - now) / 260),
-              y: Math.cos(now * 0.11 + slot) * 4 * clamp01((this.feedback[slot].shakeUntil - now) / 260),
+              x: Math.sin(now * 0.08 + slot) * 6 * clamp01((slotFeedback.shakeUntil - now) / 260),
+              y: Math.cos(now * 0.11 + slot) * 4 * clamp01((slotFeedback.shakeUntil - now) / 260),
             }
           : { x: 0, y: 0 };
 
@@ -245,7 +248,7 @@ export class BattleScene extends Phaser.Scene {
           graphics,
           previousPlayer,
           player,
-          { x: origins[slot].x + shake.x, y: origins[slot].y + shake.y },
+          { x: origin.x + shake.x, y: origin.y + shake.y },
           tileWidth,
           tileHeight,
           lift,
@@ -280,9 +283,10 @@ export class BattleScene extends Phaser.Scene {
     const boardHeight = player.board.height;
     const riskGlow = Phaser.Display.Color.GetColor(26 + (player.boardRisk * 2), 110, 160);
     const outline = isLocal ? 0x6ce6ff : this.model.highContrast ? 0xf6fbff : 0x35566f;
-    const capturePulse = this.feedback[player.slot].captureUntil > now ? clamp01((this.feedback[player.slot].captureUntil - now) / 480) : 0;
-    const warningPulse = this.feedback[player.slot].warningUntil > now ? clamp01((this.feedback[player.slot].warningUntil - now) / 450) : 0;
-    const objectivePulse = this.feedback[player.slot].objectiveUntil > now ? clamp01((this.feedback[player.slot].objectiveUntil - now) / 760) : 0;
+    const slotFeedback = this.feedback[player.slot]!;
+    const capturePulse = slotFeedback.captureUntil > now ? clamp01((slotFeedback.captureUntil - now) / 480) : 0;
+    const warningPulse = slotFeedback.warningUntil > now ? clamp01((slotFeedback.warningUntil - now) / 450) : 0;
+    const objectivePulse = slotFeedback.objectiveUntil > now ? clamp01((slotFeedback.objectiveUntil - now) / 760) : 0;
 
     if (!organicTerrain) {
       graphics.lineStyle(3, outline, isLocal ? 0.55 : 0.32);

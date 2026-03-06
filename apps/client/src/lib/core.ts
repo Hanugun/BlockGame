@@ -1,1 +1,1 @@
-export * from '../../../../packages/core/src/index.js';
+export * from '@aquawetrix/core';
