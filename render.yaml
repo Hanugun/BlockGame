@@ -24,4 +24,8 @@ services:
         value: accelerometer=(), camera=(), geolocation=(), gyroscope=(), microphone=(), payment=(), usb=()
       - path: /*
         name: Content-Security-Policy
-        value: default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; font-src 'self' data:; media-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+        value: >-
+          default-src 'self'; img-src 'self' data: blob:; style-src 'self'
+          'unsafe-inline'; script-src 'self'; connect-src 'self'; font-src
+          'self' data:; media-src 'self' blob:; object-src 'none'; base-uri
+          'self'; form-action 'self'; frame-ancestors 'none'
