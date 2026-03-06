@@ -46,7 +46,7 @@
   width: 100%;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.9rem;
 }
 
@@ -62,6 +62,13 @@
   transition: border-color 150ms ease, transform 150ms ease, background 150ms ease;
 }
 
+.soloCard {
+  background:
+    radial-gradient(circle at top left, rgba(255, 186, 110, 0.26), transparent 42%),
+    linear-gradient(180deg, rgba(40, 25, 17, 0.96), rgba(22, 16, 12, 0.94));
+  border-color: rgba(227, 170, 102, 0.42);
+}
+
 .modeCard strong {
   font-family: var(--font-display);
   font-size: 1.4rem;
@@ -72,11 +79,50 @@
   color: var(--muted);
 }
 
-.modeCard:hover,
-.modeCard:focus-visible {
+.cardEyebrow {
+  color: rgba(255, 214, 163, 0.92);
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 0.72rem;
+}
+
+.cardMeta {
+  color: rgba(222, 212, 199, 0.84);
+  font-size: 0.8rem;
+}
+
+.soloCard:hover,
+.soloCard:focus-visible {
   border-color: var(--focus);
   background: var(--surface-strong);
   transform: translateY(-2px);
+}
+
+.teaserCard {
+  opacity: 0.84;
+  background:
+    linear-gradient(180deg, rgba(21, 30, 45, 0.92), rgba(14, 19, 28, 0.92));
+  border-style: dashed;
+  cursor: not-allowed;
+}
+
+.teaserHeader {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.teaserBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0.18rem 0.55rem;
+  background: rgba(102, 182, 255, 0.12);
+  border: 1px solid rgba(102, 182, 255, 0.24);
+  color: #b5ddff;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.68rem;
 }
 
 @media (max-width: 860px) {

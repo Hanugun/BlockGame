@@ -1,14 +1,24 @@
-import type { MenuMode } from '../ui-types.js';
 import styles from './menu-screen.module.css';
 
 interface MenuScreenProps {
   profileName: string;
-  onSelectMode: (mode: MenuMode) => void;
+  onStartSolo: () => void;
   onOpenSettings: () => void;
   onRename: () => void;
 }
 
-export function MenuScreen({ profileName, onSelectMode, onOpenSettings, onRename }: MenuScreenProps) {
+const FUTURE_MODE_CARDS = [
+  {
+    title: 'Versus',
+    summary: 'Head-to-head basin battles stay visible as the next milestone.',
+  },
+  {
+    title: 'Online',
+    summary: 'Networked play is intentionally disabled in this investor demo build.',
+  },
+];
+
+export function MenuScreen({ profileName, onStartSolo, onOpenSettings, onRename }: MenuScreenProps) {
   return (
     <section className={styles.shell}>
       <header className={styles.header}>
@@ -30,12 +40,25 @@ export function MenuScreen({ profileName, onSelectMode, onOpenSettings, onRename
       <div className={styles.grid}>
         <button
           type="button"
-          className={styles.modeCard}
-          onClick={() => onSelectMode('solo')}
+          className={`${styles.modeCard} ${styles.soloCard}`}
+          onClick={onStartSolo}
         >
-          <strong>Solo Puzzle</strong>
-          <span>Aqua Aqua parity rebuild mode: Story or Endless only.</span>
+          <span className={styles.cardEyebrow}>Live Demo</span>
+          <strong>Solo</strong>
+          <span>Aqua Aqua parity rebuild mode with Story and Endless variants.</span>
+          <small className={styles.cardMeta}>Only interactive mode included in the shipped bundle.</small>
         </button>
+
+        {FUTURE_MODE_CARDS.map((card) => (
+          <article key={card.title} className={`${styles.modeCard} ${styles.teaserCard}`} aria-disabled="true">
+            <div className={styles.teaserHeader}>
+              <span className={styles.teaserBadge}>Coming Soon</span>
+            </div>
+            <strong>{card.title}</strong>
+            <span>{card.summary}</span>
+            <small className={styles.cardMeta}>Visible hook only. No runtime initialization in this demo.</small>
+          </article>
+        ))}
       </div>
     </section>
   );

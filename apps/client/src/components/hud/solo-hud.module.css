@@ -4,20 +4,17 @@
   pointer-events: none;
 }
 
-.leftCluster {
+.scoreBlock {
   position: absolute;
   left: 1.2rem;
   top: 1.1rem;
   display: grid;
-  gap: 0.65rem;
-  pointer-events: auto;
-}
-
-.scoreBlock {
+  gap: 0.15rem;
   min-width: 8.5rem;
   padding: 0.3rem 0.4rem;
   color: #64b7ff;
   text-shadow: 0 0 6px rgba(18, 121, 230, 0.34);
+  pointer-events: auto;
 }
 
 .scoreValue {
@@ -40,15 +37,23 @@
   opacity: 0.9;
 }
 
+.miniGridDock {
+  position: absolute;
+  left: 1.2rem;
+  bottom: 1rem;
+  pointer-events: auto;
+}
+
 .miniGridWrap {
   padding: 0.2rem;
+  background: rgba(14, 24, 49, 0.38);
+  border-radius: 0.45rem;
 }
 
 .miniGrid {
-  width: 9.4rem;
+  width: 16.2rem;
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 2px;
+  gap: 0;
   border: 2px solid rgba(10, 22, 41, 0.72);
   background: rgba(4, 18, 34, 0.75);
   box-shadow: 0 0 0 2px rgba(50, 106, 170, 0.38);
@@ -56,12 +61,13 @@
 
 .gridCell {
   aspect-ratio: 1;
-  background: linear-gradient(180deg, rgba(121, 201, 255, 0.56), rgba(47, 105, 163, 0.72));
-  border: 1px solid rgba(16, 40, 64, 0.8);
+  background: linear-gradient(180deg, rgba(121, 201, 255, 0.42), rgba(47, 105, 163, 0.58));
+  border-style: solid;
+  border-color: rgba(16, 40, 64, 0.8);
 }
 
 .gridCellPrimed {
-  background: linear-gradient(180deg, rgba(147, 221, 255, 0.82), rgba(66, 142, 207, 0.88));
+  background: linear-gradient(180deg, rgba(255, 214, 244, 0.84), rgba(235, 125, 184, 0.92));
 }
 
 .gridCellActive {
@@ -69,10 +75,15 @@
   border-color: rgba(96, 54, 28, 0.9);
 }
 
+.gridCellTerrain {
+  background: linear-gradient(180deg, rgba(207, 145, 92, 0.95), rgba(137, 82, 46, 0.98));
+  border-color: rgba(82, 45, 24, 0.9);
+}
+
 .topRight {
   position: absolute;
-  right: 4.7rem;
-  top: 1.1rem;
+  right: 6.25rem;
+  top: 0.95rem;
   display: grid;
   gap: 0.5rem;
   justify-items: end;
@@ -101,9 +112,9 @@
 
 .reservoir {
   position: absolute;
-  right: 1rem;
-  top: 0.9rem;
-  width: 3.5rem;
+  right: 0.85rem;
+  top: 0.8rem;
+  width: 5.25rem;
   display: grid;
   justify-items: center;
   gap: 0.28rem;
@@ -156,7 +167,11 @@
   }
 
   .miniGrid {
-    width: 7.6rem;
+    width: 13.35rem;
+  }
+
+  .reservoir {
+    width: 4.6rem;
   }
 
   .tube {

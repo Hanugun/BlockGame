@@ -1,4 +1,9 @@
-import { getPieceCells, type MatchState } from '../lib/core.js';
+import {
+  expandPieceToSimulation,
+  getPieceCells,
+  type MatchState,
+} from '../lib/core.js';
+import { phaseLabel } from '../screens/game-screen-helpers.js';
 import type { AppScreen, MenuMode } from '../ui-types.js';
 
 interface RenderGameToTextInput {
@@ -9,6 +14,10 @@ interface RenderGameToTextInput {
 
 function round(value: number): number {
   return Math.round(value * 100) / 100;
+}
+
+function toSimulationPatchCoordinate(value: number, cellScale: number): number {
+  return Math.round(value * cellScale);
 }
 
 function buildActiveCells(player: MatchState['players'][number]): Array<{
@@ -66,21 +75,37 @@ export function renderGameToText({ screen, selectedMode, match }: RenderGameToTe
 
   const player = match.players[0];
   const queuePreview = (player.activePiece ? [player.activePiece.kind, ...player.queue] : player.queue).slice(0, 4);
-  const activeFootprint = player.activePiece
+  const activeMacroFootprint = player.activePiece
     ? getPieceCells(player.activePiece.kind, player.activePiece.rotation).map((cell) => ({
-        control: {
-          x: player.activePiece!.anchor.x + cell.x,
-          y: player.activePiece!.anchor.y + cell.y,
-        },
-        simulationPatch: {
-          x: (player.activePiece!.anchor.x + cell.x) * player.cellScale,
-          y: (player.activePiece!.anchor.y + cell.y) * player.cellScale,
-          width: player.cellScale,
-          height: player.cellScale,
-        },
+        x: round(player.activePiece!.anchor.x + cell.x),
+        y: round(player.activePiece!.anchor.y + cell.y),
       }))
     : [];
-  const payload = {
+  const expandedSimulationFootprint = player.activePiece
+    ? expandPieceToSimulation(
+        player.board,
+        player.activePiece.kind,
+        player.activePiece.rotation,
+        player.activePiece.anchor,
+        player.cellScale,
+      )
+    : [];
+  const activeFootprint = activeMacroFootprint.map((cell) => ({
+    control: {
+      x: cell.x,
+      y: cell.y,
+    },
+    simulationPatch: {
+      x: toSimulationPatchCoordinate(cell.x, player.cellScale),
+      y: toSimulationPatchCoordinate(cell.y, player.cellScale),
+      width: player.cellScale,
+      height: player.cellScale,
+    },
+  }));
+  const visibleCells = buildActiveCells(player);
+  const reservoirPercent = round((player.drainLevel / Math.max(1, player.drainMax)) * 100);
+
+  return JSON.stringify({
     screen,
     selectedMode,
     coordinateSystem: {
@@ -93,6 +118,7 @@ export function renderGameToText({ screen, selectedMode, match }: RenderGameToTe
       soloVariant: match.soloVariant,
       referenceProfile: match.referenceProfile,
       rendererProfile: match.rendererProfile,
+      referenceMode: match.referenceMode,
       status: match.status,
       phase: match.phase,
       tick: match.tick,
@@ -117,7 +143,17 @@ export function renderGameToText({ screen, selectedMode, match }: RenderGameToTe
         : null,
       queuePreview,
       cellScale: player.cellScale,
+      activeMacroFootprint,
+      expandedSimulationFootprint,
       activeFootprint,
+    },
+    hud: {
+      scoreText: player.score.toLocaleString(),
+      phaseText: phaseLabel(match.mode, match.phase),
+      reservoirPercent,
+      soloVariant: match.soloVariant,
+      queuePreview,
+      menuHint: 'Menu',
     },
     board: {
       control: {
@@ -128,7 +164,11 @@ export function renderGameToText({ screen, selectedMode, match }: RenderGameToTe
         width: player.board.width,
         height: player.board.height,
       },
-      activeCells: buildActiveCells(player),
+      activeCells: visibleCells,
+      visibleState: {
+        visibleCells,
+        terrainCellsAboveZero: player.board.cells.filter((cell) => cell.height > 0).length,
+      },
     },
     recentEvents: match.events.slice(-6).map((event) => ({
       tick: event.tick,
@@ -140,7 +180,5 @@ export function renderGameToText({ screen, selectedMode, match }: RenderGameToTe
       attackKind: event.attackKind ?? null,
       anchor: event.anchor ?? null,
     })),
-  };
-
-  return JSON.stringify(payload);
+  });
 }

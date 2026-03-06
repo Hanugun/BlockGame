@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { LAKE_STABLE_TICKS, MATCH_DURATION_TICKS } from '../constants.js';
+import { LAKE_STABLE_TICKS, MATCH_DURATION_TICKS, SOLO_PIECE_LOCK_TICKS_CALM } from '../constants.js';
+import { SOLO_V2_CONFIG } from '../config/solo-v2-config.js';
 import { getPieceCells } from '../rules/pieces.js';
 import { createMatch, refillQueue } from './create-match.js';
 import { applyPlayerCommand } from './match-commands.js';
@@ -68,6 +69,52 @@ describe('match simulation', () => {
 
     expect(player.board.cells[(4 * player.board.width) + 4]?.height).toBe(2);
     expect(player.board.cells[(5 * player.board.width) + 5]?.height).toBe(2);
+  });
+
+  it('builds the square piece as a hollow box instead of a filled slab', () => {
+    const match = createMatch({ seed: 58, mode: 'solo' });
+    const player = match.players[0];
+    player.activePiece = {
+      id: 'square-ring',
+      kind: 'square',
+      rotation: 0,
+      anchor: { x: 1, y: 1 },
+      ticksRemaining: 1,
+    };
+
+    lockActivePiece(match, 0, 'drop');
+
+    const originX = 1 * player.cellScale;
+    const originY = 1 * player.cellScale;
+    const centerIndex = ((originY + 2) * player.board.width) + (originX + 2);
+    const edgeIndex = (originY * player.board.width) + originX;
+    expect(player.board.cells[edgeIndex]!.height).toBeGreaterThan(0);
+    expect(player.board.cells[centerIndex]!.height).toBe(0);
+  });
+
+  it('builds solo ridge terrain as a hill profile instead of a flat wall', () => {
+    const match = createMatch({ seed: 59, mode: 'solo' });
+    const player = match.players[0];
+    player.activePiece = {
+      id: 'ridge-hill-profile',
+      kind: 'ridge',
+      rotation: 0,
+      anchor: { x: 1, y: 1 },
+      ticksRemaining: 1,
+    };
+
+    lockActivePiece(match, 0, 'drop');
+
+    const originX = 1 * player.cellScale;
+    const originY = 1 * player.cellScale;
+    const cornerIndex = (originY * player.board.width) + originX;
+    const edgeIndex = (originY * player.board.width) + originX + 1;
+    const centerIndex = ((originY + 1) * player.board.width) + originX + 1;
+    const totalHeight = player.board.cells.reduce((sum, cell) => sum + cell.height, 0);
+
+    expect(totalHeight).toBeCloseTo(36, 5);
+    expect(player.board.cells[edgeIndex]!.height).toBeGreaterThan(player.board.cells[cornerIndex]!.height);
+    expect(player.board.cells[centerIndex]!.height).toBeGreaterThan(player.board.cells[edgeIndex]!.height);
   });
 
   it('damages stability when water spills off the edge', () => {
@@ -227,8 +274,21 @@ describe('match simulation', () => {
     expect(totalWater).toBeGreaterThan(0);
   });
 
+  it('does not start solo rain fronts before the score unlock', () => {
+    const match = createMatch({ seed: 223, mode: 'solo' });
+    match.stormTicksUntilPulse = 1;
+
+    stepMatch(match);
+
+    const totalWater = match.players[0].board.cells.reduce((sum, cell) => sum + cell.water, 0);
+    expect(totalWater).toBe(0);
+    expect(match.events.some((event) => event.type === 'storm_pulse')).toBe(false);
+  });
+
   it('keeps solo storm rain clustered instead of scattering across the whole map', () => {
     const match = createMatch({ seed: 222, mode: 'solo' });
+    match.players[0].score = SOLO_V2_CONFIG.progression.rainUnlockScore;
+    match.players[0].capturedLakes = 1;
     match.stormTicksUntilPulse = 1;
 
     stepMatch(match);
@@ -251,8 +311,8 @@ describe('match simulation', () => {
     expect(match.events.some((event) => event.type === 'storm_pulse' && event.message.includes('Rain front struck'))).toBe(true);
   });
 
-  it('triggers an earthquake when terrain pressure is neglected', () => {
-    const match = createMatch({ seed: 14 });
+  it('does not trigger earthquake damage while random terrain damage is disabled for solo', () => {
+    const match = createMatch({ seed: 14, mode: 'solo' });
     const player = match.players[0];
     for (let y = 3; y <= 5; y += 1) {
       for (let x = 3; x <= 5; x += 1) {
@@ -263,8 +323,25 @@ describe('match simulation', () => {
 
     stepMatch(match);
 
-    expect(match.events.some((event) => event.type === 'earthquake')).toBe(true);
-    expect(player.quakeMeter).toBeLessThan(140);
+    expect(match.events.some((event) => event.type === 'earthquake')).toBe(false);
+    expect(player.quakeMeter).toBe(140);
+  });
+
+  it('does not build earthquake pressure on low flat terrain', () => {
+    const match = createMatch({ seed: 145, mode: 'solo' });
+    const player = match.players[0];
+    for (let y = 0; y < player.board.height; y += 1) {
+      for (let x = 0; x < player.board.width; x += 1) {
+        player.board.cells[(y * player.board.width) + x]!.height = y < 6 ? 2 : 1;
+      }
+    }
+
+    for (let tick = 0; tick < 20; tick += 1) {
+      stepMatch(match);
+    }
+
+    expect(player.quakeMeter).toBe(0);
+    expect(match.events.some((event) => event.type === 'earthquake')).toBe(false);
   });
 
   it('scores a versus-board line and clears the board', () => {
@@ -436,9 +513,9 @@ describe('match simulation', () => {
     player.piecesPlaced = 0;
     player.queue = [];
     refillQueue(player, 'solo');
-    expect(player.queue.every((piece) => piece !== 'water' && piece !== 'fire' && piece !== 'bomb')).toBe(true);
+    expect(player.queue.every((piece) => piece !== 'water' && piece !== 'fire' && piece !== 'bomb' && piece !== 'trench' && piece !== 'pit')).toBe(true);
 
-    player.piecesPlaced = 9;
+    player.piecesPlaced = 5;
     let sawWater = false;
     for (let index = 0; index < 12; index += 1) {
       player.queue = [];
@@ -450,7 +527,7 @@ describe('match simulation', () => {
     }
     expect(sawWater).toBe(true);
 
-    player.piecesPlaced = 17;
+    player.piecesPlaced = 8;
     let sawFire = false;
     for (let index = 0; index < 20; index += 1) {
       player.queue = [];
@@ -462,7 +539,19 @@ describe('match simulation', () => {
     }
     expect(sawFire).toBe(true);
 
-    player.piecesPlaced = 25;
+    player.piecesPlaced = 12;
+    let sawDowner = false;
+    for (let index = 0; index < 20; index += 1) {
+      player.queue = [];
+      refillQueue(player, 'solo');
+      if (player.queue.includes('trench') || player.queue.includes('pit')) {
+        sawDowner = true;
+        break;
+      }
+    }
+    expect(sawDowner).toBe(true);
+
+    player.piecesPlaced = 18;
     let sawBomb = false;
     for (let index = 0; index < 28; index += 1) {
       player.queue = [];
@@ -473,6 +562,46 @@ describe('match simulation', () => {
       }
     }
     expect(sawBomb).toBe(true);
+  });
+
+  it('biases the solo queue toward fire once a lake is primed', () => {
+    const shapingMatch = createMatch({ seed: 906, mode: 'solo' });
+    const shapingPlayer = shapingMatch.players[0];
+    shapingPlayer.piecesPlaced = SOLO_V2_CONFIG.progression.fireUnlockPiecesPlaced;
+    shapingPlayer.queue = [];
+    shapingPlayer.activePiece = null;
+    shapingPlayer.recentPieces = [];
+
+    let shapingWater = 0;
+    let shapingFire = 0;
+    for (let index = 0; index < 30; index += 1) {
+      shapingPlayer.queue = [];
+      refillQueue(shapingPlayer, 'solo');
+      shapingWater += shapingPlayer.queue.filter((piece) => piece === 'water').length;
+      shapingFire += shapingPlayer.queue.filter((piece) => piece === 'fire').length;
+    }
+
+    const primedMatch = createMatch({ seed: 906, mode: 'solo' });
+    const primedPlayer = primedMatch.players[0];
+    primedPlayer.piecesPlaced = SOLO_V2_CONFIG.progression.bombUnlockPiecesPlaced;
+    primedPlayer.queue = [];
+    primedPlayer.activePiece = null;
+    primedPlayer.recentPieces = [];
+    primedPlayer.primedLakes = 1;
+    primedPlayer.primedWater = 4;
+    primedPlayer.capturedLakes = 1;
+
+    let primedWater = 0;
+    let primedFire = 0;
+    for (let index = 0; index < 30; index += 1) {
+      primedPlayer.queue = [];
+      refillQueue(primedPlayer, 'solo');
+      primedWater += primedPlayer.queue.filter((piece) => piece === 'water').length;
+      primedFire += primedPlayer.queue.filter((piece) => piece === 'fire').length;
+    }
+
+    expect(shapingWater).toBeGreaterThan(shapingFire);
+    expect(primedFire).toBeGreaterThan(primedWater);
   });
 
   it('does not reduce drain level from ordinary fire evaporation', () => {
@@ -544,5 +673,56 @@ describe('match simulation', () => {
 
     expect(Math.abs(beforeCenter.x - afterCenter.x)).toBeLessThanOrEqual(0.5);
     expect(Math.abs(beforeCenter.y - afterCenter.y)).toBeLessThanOrEqual(0.5);
+  });
+
+  it('keeps the full solo lock window after moving a piece', () => {
+    const match = createMatch({ seed: 602, mode: 'solo' });
+    const player = match.players[0];
+    player.activePiece = {
+      id: 'solo-lock-window',
+      kind: 'ridge',
+      rotation: 0,
+      anchor: { x: 1, y: 1 },
+      ticksRemaining: SOLO_PIECE_LOCK_TICKS_CALM,
+    };
+
+    applyPlayerCommand(match, { type: 'move', slot: 0, dx: 1, dy: 0 });
+
+    expect(player.activePiece?.anchor.x).toBeCloseTo(1 + (1 / 3));
+    expect(player.activePiece?.ticksRemaining).toBe(SOLO_PIECE_LOCK_TICKS_CALM);
+  });
+
+  it('moves solo terrain pieces by one simulation cell per input instead of a full 3x3 patch', () => {
+    const match = createMatch({ seed: 606, mode: 'solo' });
+    const player = match.players[0];
+    player.activePiece = {
+      id: 'solo-step-size',
+      kind: 'square',
+      rotation: 0,
+      anchor: { x: 1, y: 1 },
+      ticksRemaining: SOLO_PIECE_LOCK_TICKS_CALM,
+    };
+
+    applyPlayerCommand(match, { type: 'move', slot: 0, dx: 1, dy: 0 });
+    applyPlayerCommand(match, { type: 'move', slot: 0, dx: 0, dy: 1 });
+
+    expect(player.activePiece?.anchor.x).toBeCloseTo(1 + (1 / 3));
+    expect(player.activePiece?.anchor.y).toBeCloseTo(1 + (1 / 3));
+  });
+
+  it('does not award versus-style speed drop score in solo', () => {
+    const match = createMatch({ seed: 603, mode: 'solo' });
+    const player = match.players[0];
+    player.activePiece = {
+      id: 'solo-drop-score',
+      kind: 'ridge',
+      rotation: 0,
+      anchor: { x: 1, y: 1 },
+      ticksRemaining: SOLO_PIECE_LOCK_TICKS_CALM,
+    };
+
+    lockActivePiece(match, 0, 'drop');
+
+    expect(player.score).toBe(0);
   });
 });

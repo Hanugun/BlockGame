@@ -1,7 +1,18 @@
-import { PIECE_LOCK_TICKS } from '../constants.js';
+import { getPieceLockTicks } from './create-match.js';
 import { lockActivePiece } from './match-step.js';
 import { getPieceCells } from '../rules/pieces.js';
 import type { MatchState, PlayerCommand } from '../types.js';
+
+function getAnchorStep(state: MatchState): number {
+  if (state.mode !== 'solo') {
+    return 1;
+  }
+  return 1 / Math.max(1, state.players[0].cellScale);
+}
+
+function snapToAnchorStep(value: number, step: number): number {
+  return Math.round(value / step) * step;
+}
 
 function getCellsCenter(cells: { x: number; y: number }[]): { x: number; y: number } {
   const minX = Math.min(...cells.map((cell) => cell.x));
@@ -21,11 +32,22 @@ function clampActivePiece(state: MatchState, slot: 0 | 1): void {
     return;
   }
 
+  const step = getAnchorStep(state);
   const cells = getPieceCells(activePiece.kind, activePiece.rotation);
+  const minX = Math.min(...cells.map((cell) => cell.x));
+  const minY = Math.min(...cells.map((cell) => cell.y));
   const maxX = Math.max(...cells.map((cell) => cell.x));
   const maxY = Math.max(...cells.map((cell) => cell.y));
-  activePiece.anchor.x = Math.min(Math.max(activePiece.anchor.x, 0), player.controlGrid.width - (maxX + 1));
-  activePiece.anchor.y = Math.min(Math.max(activePiece.anchor.y, 0), player.controlGrid.height - (maxY + 1));
+  const maxAnchorX = player.controlGrid.width - (maxX + 1);
+  const maxAnchorY = player.controlGrid.height - (maxY + 1);
+  activePiece.anchor.x = snapToAnchorStep(
+    Math.min(Math.max(activePiece.anchor.x, -minX), maxAnchorX),
+    step,
+  );
+  activePiece.anchor.y = snapToAnchorStep(
+    Math.min(Math.max(activePiece.anchor.y, -minY), maxAnchorY),
+    step,
+  );
 }
 
 export function applyPlayerCommand(state: MatchState, command: PlayerCommand): void {
@@ -41,20 +63,24 @@ export function applyPlayerCommand(state: MatchState, command: PlayerCommand): v
 
   switch (command.type) {
     case 'move':
-      activePiece.anchor.x += command.dx;
-      activePiece.anchor.y += command.dy;
+      {
+        const moveStep = getAnchorStep(state);
+        activePiece.anchor.x += command.dx * moveStep;
+        activePiece.anchor.y += command.dy * moveStep;
+      }
       clampActivePiece(state, command.slot);
       break;
     case 'rotate':
       {
+        const rotateStep = getAnchorStep(state);
         const previousCells = getPieceCells(activePiece.kind, activePiece.rotation);
         const previousCenter = getCellsCenter(previousCells);
         const nextRotation = (((activePiece.rotation + command.delta) % 4) + 4) % 4 as 0 | 1 | 2 | 3;
         const nextCells = getPieceCells(activePiece.kind, nextRotation);
         const nextCenter = getCellsCenter(nextCells);
         activePiece.rotation = nextRotation;
-        activePiece.anchor.x = Math.round(activePiece.anchor.x + previousCenter.x - nextCenter.x);
-        activePiece.anchor.y = Math.round(activePiece.anchor.y + previousCenter.y - nextCenter.y);
+        activePiece.anchor.x = snapToAnchorStep(activePiece.anchor.x + previousCenter.x - nextCenter.x, rotateStep);
+        activePiece.anchor.y = snapToAnchorStep(activePiece.anchor.y + previousCenter.y - nextCenter.y, rotateStep);
       }
       clampActivePiece(state, command.slot);
       break;
@@ -67,6 +93,9 @@ export function applyPlayerCommand(state: MatchState, command: PlayerCommand): v
   }
 
   if (player.activePiece) {
-    player.activePiece.ticksRemaining = Math.min(player.activePiece.ticksRemaining, PIECE_LOCK_TICKS);
+    player.activePiece.ticksRemaining = Math.min(
+      player.activePiece.ticksRemaining,
+      getPieceLockTicks(state.mode, state.phase),
+    );
   }
 }

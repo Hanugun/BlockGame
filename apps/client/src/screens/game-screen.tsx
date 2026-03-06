@@ -79,42 +79,45 @@ export function GameScreen({
 
   return (
     <section ref={viewportRef} className={styles.viewport} tabIndex={-1}>
-      <BattleCanvas
-        localSlot={match.mode === 'solo' ? 0 : localSlot}
-        match={match}
-        mode={canvasMode}
-        reducedMotion={reducedMotion}
-        highContrast={highContrast}
-        sendCommand={sendCommand}
-      />
+      <div className={styles.stageFrame}>
+        <BattleCanvas
+          className={styles.stageCanvas}
+          localSlot={match.mode === 'solo' ? 0 : localSlot}
+          match={match}
+          mode={canvasMode}
+          reducedMotion={reducedMotion}
+          highContrast={highContrast}
+          sendCommand={sendCommand}
+        />
 
-      <div className={match.mode === 'solo' ? styles.overlaySolo : styles.overlay}>
-        {match.mode === 'solo' ? (
-          <SoloHud
-            match={match}
-            primary={primary}
-            onOpenOverlay={onOpenOverlay}
-          />
-        ) : (
-          <>
-            <CoreStrip
+        <div className={match.mode === 'solo' ? styles.overlaySolo : styles.overlay}>
+          {match.mode === 'solo' ? (
+            <SoloHud
               match={match}
               primary={primary}
-              rival={rival}
-              roomCode={roomCode}
-              connectionLabel={connectionLabel}
-            />
-            <DetailDrawer
-              mode={mode}
-              match={match}
-              primary={primary}
-              localSlot={localSlot}
-              showTips={showTips}
-              tacticalTips={tacticalTips}
               onOpenOverlay={onOpenOverlay}
             />
-          </>
-        )}
+          ) : (
+            <>
+              <CoreStrip
+                match={match}
+                primary={primary}
+                rival={rival}
+                roomCode={roomCode}
+                connectionLabel={connectionLabel}
+              />
+              <DetailDrawer
+                mode={mode}
+                match={match}
+                primary={primary}
+                localSlot={localSlot}
+                showTips={showTips}
+                tacticalTips={tacticalTips}
+                onOpenOverlay={onOpenOverlay}
+              />
+            </>
+          )}
+        </div>
       </div>
     </section>
   );

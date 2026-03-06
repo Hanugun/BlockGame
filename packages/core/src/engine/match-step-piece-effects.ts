@@ -2,6 +2,7 @@ import { LAKE_CAPTURE_VOLUME, MAX_TERRAIN_HEIGHT, MIN_WATER_THRESHOLD } from '..
 import { getPieceDefinition } from '../rules/pieces.js';
 import type { BoardState, PlayerState, TerrainPieceKind, Vec2 } from '../types.js';
 import { getCell, getNeighbors, isInBounds, roundWater } from '../utils/board.js';
+import type { TerrainHeightDelta } from '../utils/grid.js';
 import { collectLakeComponents } from './match-step-lakes.js';
 
 function forRadius(center: Vec2, radius: number, callback: (cell: Vec2) => void): void {
@@ -56,7 +57,7 @@ export interface TerrainResolution {
   lowered: number;
 }
 
-export function applyTerrainPiece(board: BoardState, kind: TerrainPieceKind, cells: Vec2[]): TerrainResolution {
+export function applyTerrainPiece(board: BoardState, kind: TerrainPieceKind, cells: TerrainHeightDelta[]): TerrainResolution {
   const definition = getPieceDefinition(kind);
   if (definition.terrainMode === 'lower') {
     let lowered = 0;
@@ -68,8 +69,9 @@ export function applyTerrainPiece(board: BoardState, kind: TerrainPieceKind, cel
       if (cell.height <= 0) {
         continue;
       }
-      cell.height -= 1;
-      lowered += 1;
+      const nextHeight = roundWater(Math.max(0, cell.height - position.amount));
+      lowered = roundWater(lowered + Math.max(0, cell.height - nextHeight));
+      cell.height = nextHeight;
     }
     return { raised: 0, lowered };
   }
@@ -89,8 +91,8 @@ export function applyTerrainPiece(board: BoardState, kind: TerrainPieceKind, cel
     if (cell.holeDepth > 0) {
       continue;
     }
-    const nextHeight = Math.min(MAX_TERRAIN_HEIGHT, cell.height + 1);
-    raised += Math.max(0, nextHeight - cell.height);
+    const nextHeight = roundWater(Math.min(MAX_TERRAIN_HEIGHT, cell.height + position.amount));
+    raised = roundWater(raised + Math.max(0, nextHeight - cell.height));
     cell.height = nextHeight;
   }
   return { raised, lowered: 0 };

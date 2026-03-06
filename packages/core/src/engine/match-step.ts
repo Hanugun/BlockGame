@@ -17,7 +17,7 @@ import type {
 import { getCell, isInBounds, roundWater } from '../utils/board.js';
 import {
   controlToSimulationCenter,
-  expandControlCellsToSimulation,
+  expandTerrainPieceToSimulationProfile,
 } from '../utils/grid.js';
 import { nextRandom, type RandomState } from '../utils/rng.js';
 import { refillQueue, spawnNextPiece } from './create-match.js';
@@ -177,6 +177,11 @@ function applyStormPulse(state: MatchState): void {
   const spec = getStormSpec(state.phase, state.mode);
   for (const slot of activeSlots(state)) {
     const player = state.players[slot];
+    const rainUnlocked = state.mode !== 'solo'
+      || (player.capturedLakes >= 1 && player.score >= SOLO_V2_CONFIG.progression.rainUnlockScore);
+    if (!rainUnlocked) {
+      continue;
+    }
     const randomState: RandomState = { seed: player.rng };
     let pulseTargets = sampleCells(player.board, randomState, spec.cells);
 
@@ -204,8 +209,10 @@ function applyStormPulse(state: MatchState): void {
     }
 
     if (state.mode === 'solo') {
-      const mineChance = state.phase === 'tempest' ? 0.2 : state.phase === 'surge' ? 0.14 : 0;
-      const iceChance = state.phase === 'tempest' ? 0.18 : 0;
+      const mineUnlocked = player.capturedLakes >= 2 && player.score >= SOLO_V2_CONFIG.progression.mineUnlockScore;
+      const iceUnlocked = player.capturedLakes >= 3 && player.score >= SOLO_V2_CONFIG.progression.iceUnlockScore;
+      const mineChance = mineUnlocked ? (state.phase === 'tempest' ? 0.2 : state.phase === 'surge' ? 0.14 : 0.08) : 0;
+      const iceChance = iceUnlocked ? (state.phase === 'tempest' ? 0.18 : 0.08) : 0;
       if (nextRandom(randomState) <= mineChance) {
         const candidates = pulseTargets.length > 0 ? pulseTargets : sampleCells(player.board, randomState, 4);
         const target = candidates.find((position) => {
@@ -270,20 +277,23 @@ function syncSoloDrainCapacity(state: MatchState, slot: PlayerSlot): void {
 }
 
 function maybeRunSoloBossAttack(state: MatchState): void {
-  if (state.mode !== 'solo' || state.soloVariant !== 'story') {
+  if (
+    state.mode !== 'solo'
+    || state.soloVariant !== 'story'
+    || !SOLO_V2_CONFIG.hazards.bossAttacksEnabled
+  ) {
     return;
   }
-  const checkpoints = SOLO_V2_CONFIG.story.bossAttackCheckpoints;
+  const checkpoints = SOLO_V2_CONFIG.story.bossAttackScoreThresholds;
   const nextIndex = state.soloBossAttackIndex;
   if (nextIndex >= checkpoints.length) {
     return;
   }
-  const progress = getProgressTicks(state) / MATCH_DURATION_TICKS;
-  if (progress < checkpoints[nextIndex]!) {
+  const player = state.players[0];
+  if (player.capturedLakes < nextIndex + 1 || player.score < checkpoints[nextIndex]!) {
     return;
   }
 
-  const player = state.players[0];
   const power = Math.min(3, 1 + nextIndex);
   const kind = nextIndex % 2 === 0 ? 'bomb_attack' : 'downer_attack';
   player.rng = applyAttack(player.board, kind, power, player.rng);
@@ -352,11 +362,11 @@ export function lockActivePiece(state: MatchState, slot: PlayerSlot, reason: Loc
     return;
   }
   const speedDropBonus = reason === 'drop'
+    && state.mode === 'versus'
     ? Math.max(0, Math.round(Math.max(0, activePiece.ticksRemaining - 1) * 8))
     : 0;
 
   const controlCells = absoluteCells(activePiece.kind, activePiece.rotation, activePiece.anchor);
-  const simulationCells = expandControlCellsToSimulation(player.board, controlCells, player.cellScale);
   if (activePiece.kind === 'water' || activePiece.kind === 'bomb' || activePiece.kind === 'fire' || activePiece.kind === 'ice') {
     const anchorControlCell = controlCells[0] ?? activePiece.anchor;
     const simulationCenter = controlToSimulationCenter(anchorControlCell, player.cellScale);
@@ -433,10 +443,29 @@ export function lockActivePiece(state: MatchState, slot: PlayerSlot, reason: Loc
     }
   } else {
     const terrainDefinition = getPieceDefinition(activePiece.kind);
-    const terrainCells = state.mode === 'solo' && terrainDefinition.terrainMode === 'raise' && hasSoloBonus(state, 'bigger_earth')
-      ? growTerrainCells(player.board, simulationCells)
-      : simulationCells;
-    const terrainResolution = applyTerrainPiece(player.board, activePiece.kind, terrainCells);
+    const terrainProfile = expandTerrainPieceToSimulationProfile(
+      player.board,
+      activePiece.kind,
+      activePiece.rotation,
+      activePiece.anchor,
+      player.cellScale,
+    );
+    if (state.mode === 'solo' && terrainDefinition.terrainMode === 'raise' && hasSoloBonus(state, 'bigger_earth')) {
+      const grownCells = growTerrainCells(
+        player.board,
+        terrainProfile.map((cell) => ({ x: cell.x, y: cell.y })),
+      );
+      const occupied = new Set(terrainProfile.map((cell) => `${cell.x}:${cell.y}`));
+      for (const extraCell of grownCells) {
+        const key = `${extraCell.x}:${extraCell.y}`;
+        if (occupied.has(key)) {
+          continue;
+        }
+        occupied.add(key);
+        terrainProfile.push({ ...extraCell, amount: 1 });
+      }
+    }
+    const terrainResolution = applyTerrainPiece(player.board, activePiece.kind, terrainProfile);
     if (terrainResolution.raised > 0) {
       addTerrainStress(player, terrainResolution.raised * 0.9);
     }
@@ -533,7 +562,9 @@ export function stepMatch(state: MatchState): void {
 
     syncSoloDrainCapacity(state, slot);
     runWaterSimulation(player, 1);
-    triggerEarthquake(state, slot);
+    if (state.mode !== 'solo' || SOLO_V2_CONFIG.hazards.randomTerrainDamageEnabled) {
+      triggerEarthquake(state, slot);
+    }
     if (player.overflowLastTick > MIN_WATER_THRESHOLD) {
       createEvent(
         state,

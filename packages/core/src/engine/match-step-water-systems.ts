@@ -158,12 +158,10 @@ export function updateBoardMetrics(player: PlayerState): void {
 
 export function addTerrainStress(player: PlayerState, amount: number): void {
   player.terrainStress = roundWater(Math.max(0, player.terrainStress + amount));
-  player.quakeMeter = roundWater(Math.max(0, player.quakeMeter + (amount * 1.4)));
 }
 
 export function relieveTerrainStress(player: PlayerState, amount: number): void {
   player.terrainStress = roundWater(Math.max(0, player.terrainStress - amount));
-  player.quakeMeter = roundWater(Math.max(0, player.quakeMeter - (amount * 1.8)));
 }
 
 export function sampleCells(board: BoardState, randomState: RandomState, count: number): Vec2[] {
@@ -289,7 +287,22 @@ export function triggerEarthquake(state: MatchState, slot: PlayerSlot): void {
   }
 
   const randomState: RandomState = { seed: player.rng };
-  for (const position of sampleCells(player.board, randomState, 6)) {
+  const highCells = player.board.cells
+    .map((cell, index) => ({
+      x: index % player.board.width,
+      y: Math.floor(index / player.board.width),
+      height: cell.height,
+    }))
+    .filter((cell) => cell.height > safeHeight)
+    .sort((left, right) => right.height - left.height);
+  const targets = highCells.length >= 6
+    ? highCells.slice(0, 6).map(({ x, y }) => ({ x, y }))
+    : [
+        ...highCells.map(({ x, y }) => ({ x, y })),
+        ...sampleCells(player.board, randomState, Math.max(0, 6 - highCells.length)),
+      ];
+
+  for (const position of targets) {
     const cell = getCell(player.board, position.x, position.y);
     const previousHeight = cell.height;
     const loss = nextRandom(randomState) > 0.58 ? 2 : 1;

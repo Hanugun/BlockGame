@@ -1,0 +1,10 @@
+[
+  {
+    "type": "pageerror",
+    "text": "TypeError: Cannot read properties of undefined (reading 'holeDepth')"
+  },
+  {
+    "type": "pageerror",
+    "text": "TypeError: Cannot read properties of undefined (reading 'height')"
+  }
+]

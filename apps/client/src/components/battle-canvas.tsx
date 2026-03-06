@@ -9,6 +9,7 @@ interface BattleCanvasProps {
   reducedMotion: boolean;
   highContrast: boolean;
   sendCommand: (command: PlayerCommand) => void;
+  className?: string | undefined;
 }
 
 export function BattleCanvas({
@@ -18,6 +19,7 @@ export function BattleCanvas({
   reducedMotion,
   highContrast,
   sendCommand,
+  className,
 }: BattleCanvasProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const handleRef = useRef<BattleGameHandle | null>(null);
@@ -56,5 +58,5 @@ export function BattleCanvas({
     };
   }, []);
 
-  return <div ref={containerRef} className="battle-canvas" tabIndex={0} />;
+  return <div ref={containerRef} className={['battle-canvas', className].filter(Boolean).join(' ')} tabIndex={0} />;
 }

@@ -1,21 +1,17 @@
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { readAutomationConfig } from './app/automation-config.js';
-import type { PlayerCommand } from './lib/core.js';
-import { connectionLabel } from './app/connection-label.js';
 import { renderGameToText } from './app/render-game-to-text.js';
 import { buildTacticalTips } from './app/tactical-tips.js';
 import { Modal } from './components/modal.js';
 import { useBattleAudio } from './hooks/use-battle-audio.js';
 import { useGameInput } from './hooks/use-game-input.js';
 import { useLocalBattle } from './hooks/use-local-battle.js';
-import { useOnlineBattle } from './hooks/use-online-battle.js';
 import { useUiPreferences } from './hooks/use-ui-preferences.js';
 import { GameScreen } from './screens/game-screen.js';
 import { IdentityScreen } from './screens/identity-screen.js';
-import { LobbyScreen } from './screens/lobby-screen.js';
 import { MenuScreen } from './screens/menu-screen.js';
 import { SetupScreen } from './screens/setup-screen.js';
-import type { AppScreen, MenuMode } from './ui-types.js';
+import type { AppScreen } from './ui-types.js';
 import styles from './App.module.css';
 
 const PROFILE_STORAGE_KEY = 'aquawetrix-profile-name';
@@ -31,18 +27,14 @@ export function App() {
   const automation = useMemo(() => readAutomationConfig(), []);
   const autostartRanRef = useRef(false);
   const [screen, setScreen] = useState<AppScreen>(() => (automation.autostartSolo ? 'game' : 'identity'));
-  const [selectedMode, setSelectedMode] = useState<MenuMode>('solo');
   const [soloVariant, setSoloVariant] = useState<'story' | 'endless'>('story');
   const [profileName, setProfileName] = useState(loadProfileName);
-  const [localNames, setLocalNames] = useState(() => ({ left: loadProfileName(), right: 'Cascade' }));
-  const [onlineName, setOnlineName] = useState(loadProfileName);
-  const [roomCodeInput, setRoomCodeInput] = useState('');
   const [showSettings, setShowSettings] = useState(false);
   const [showGameMenu, setShowGameMenu] = useState(false);
 
   const localBattle = useLocalBattle();
-  const onlineBattle = useOnlineBattle();
   const { preferences, updatePreference } = useUiPreferences();
+  const selectedMode = 'solo' as const;
 
   const startSoloMatch = (pilotName: string) => {
     const options: Parameters<typeof localBattle.start>[0] = {
@@ -62,10 +54,9 @@ export function App() {
       return;
     }
     autostartRanRef.current = true;
-    const pilotName = profileName.trim() || 'Delta';
     const options: Parameters<typeof localBattle.start>[0] = {
       mode: 'solo',
-      playerNames: [pilotName, 'Solo Puzzle'],
+      playerNames: [profileName.trim() || 'Delta', 'Solo Puzzle'],
       soloVariant,
       clockMode: automation.automationEnabled ? 'manual' : 'realtime',
     };
@@ -79,28 +70,15 @@ export function App() {
     window.localStorage.setItem(PROFILE_STORAGE_KEY, profileName);
   }, [profileName]);
 
-  const activeScreen: AppScreen = screen === 'lobby' && onlineBattle.canEnterMatch ? 'game' : screen;
-
-  const currentMatch = useDeferredValue(
-    selectedMode === 'online_host' || selectedMode === 'online_join' ? onlineBattle.match : localBattle.match,
-  );
-  const currentLocalSlot = selectedMode === 'online_host' || selectedMode === 'online_join'
-    ? onlineBattle.localSlot
-    : selectedMode === 'solo'
-      ? 0
-      : null;
+  const currentMatch = useDeferredValue(localBattle.match);
   const tacticalTips = useMemo(
-    () => (currentMatch ? buildTacticalTips(currentMatch, currentLocalSlot) : []),
-    [currentMatch, currentLocalSlot],
+    () => (currentMatch ? buildTacticalTips(currentMatch, 0) : []),
+    [currentMatch],
   );
-  const resultOpen = activeScreen === 'game' && currentMatch?.status === 'complete';
-
-  const sendCommand = (command: PlayerCommand) => {
-    localBattle.sendCommand(command);
-  };
+  const resultOpen = screen === 'game' && currentMatch?.status === 'complete';
 
   useGameInput({
-    screen: activeScreen,
+    screen,
     selectedMode,
     automationEnabled: automation.automationEnabled,
     showGameMenu,
@@ -110,7 +88,7 @@ export function App() {
       setShowGameMenu((current) => !current);
     },
     sendLocalCommand: localBattle.sendCommand,
-    sendOnlineCommand: onlineBattle.sendCommand,
+    sendOnlineCommand: () => {},
   });
 
   useEffect(() => {
@@ -119,38 +97,27 @@ export function App() {
     }
 
     window.render_game_to_text = () => renderGameToText({
-      screen: activeScreen,
+      screen,
       selectedMode,
       match: currentMatch,
     });
     window.advanceTime = async (ms: number) => {
       const safeMs = Number.isFinite(ms) && ms > 0 ? ms : 0;
-      if (selectedMode === 'solo') {
-        await localBattle.advanceTime(safeMs);
-        return;
-      }
-      await new Promise<void>((resolve) => {
-        window.setTimeout(resolve, safeMs);
-      });
+      await localBattle.advanceTime(safeMs);
     };
 
     return () => {
       delete window.render_game_to_text;
       delete window.advanceTime;
     };
-  }, [activeScreen, automation.automationEnabled, currentMatch, localBattle, selectedMode]);
+  }, [automation.automationEnabled, currentMatch, localBattle, screen]);
 
   useBattleAudio(currentMatch, preferences.audioEnabled);
 
   const launchMode = () => {
     setShowGameMenu(false);
-    const safeProfile = profileName.trim() || 'Delta';
-    startSoloMatch(safeProfile);
+    startSoloMatch(profileName.trim() || 'Delta');
     setScreen('game');
-  };
-
-  const leaveOnlineLobby = () => {
-    setScreen('menu');
   };
 
   const exitCurrentMatch = () => {
@@ -164,86 +131,53 @@ export function App() {
     launchMode();
   };
 
-  const battleConnectionLabel = connectionLabel(selectedMode, currentMatch, onlineBattle.connectionState);
-
   return (
-      <main className={styles.shell}>
-      {activeScreen === 'identity' ? (
+    <main className={styles.shell}>
+      {screen === 'identity' ? (
         <IdentityScreen
           profileName={profileName}
           onProfileNameChange={setProfileName}
           onContinue={() => {
-            const nextName = profileName.trim() || 'Delta';
-            setProfileName(nextName);
-            setLocalNames((current) => ({ ...current, left: current.left.trim() ? current.left : nextName }));
-            setOnlineName((current) => current.trim() ? current : nextName);
+            setProfileName(profileName.trim() || 'Delta');
             setScreen('menu');
           }}
           onOpenSettings={() => setShowSettings(true)}
         />
       ) : null}
 
-      {activeScreen === 'menu' ? (
+      {screen === 'menu' ? (
         <MenuScreen
           profileName={profileName}
-          onSelectMode={(mode) => {
-            void mode;
-            setSelectedMode('solo');
-            setLocalNames((current) => ({ ...current, left: profileName }));
-            setScreen('setup');
-          }}
+          onStartSolo={() => setScreen('setup')}
           onOpenSettings={() => setShowSettings(true)}
           onRename={() => setScreen('identity')}
         />
       ) : null}
 
-      {activeScreen === 'setup' ? (
+      {screen === 'setup' ? (
         <SetupScreen
-          key={selectedMode}
-          mode={selectedMode}
           profileName={profileName}
-          localNames={localNames}
-          onlineName={onlineName}
-          roomCodeInput={roomCodeInput}
           soloVariant={soloVariant}
           onSoloVariantChange={setSoloVariant}
-          connectionState={onlineBattle.connectionState}
-          error={onlineBattle.error}
           onBack={() => setScreen('menu')}
           onOpenSettings={() => setShowSettings(true)}
           onProfileNameChange={setProfileName}
-          onLocalNamesChange={setLocalNames}
-          onOnlineNameChange={setOnlineName}
-          onRoomCodeChange={setRoomCodeInput}
           onStart={launchMode}
         />
       ) : null}
 
-      {activeScreen === 'lobby' ? (
-        <LobbyScreen
-          mode={selectedMode === 'online_join' ? 'online_join' : 'online_host'}
-          connectionState={onlineBattle.connectionState}
-          roomCode={onlineBattle.roomCode}
-          players={onlineBattle.players}
-          error={onlineBattle.error}
-          canEnterMatch={onlineBattle.canEnterMatch}
-          onEnterMatch={() => setScreen('game')}
-          onLeave={leaveOnlineLobby}
-        />
-      ) : null}
-
-      {activeScreen === 'game' ? (
+      {screen === 'game' ? (
         <GameScreen
           mode={selectedMode}
           match={currentMatch}
-          localSlot={currentLocalSlot}
-          connectionLabel={battleConnectionLabel}
-          roomCode={selectedMode === 'online_host' || selectedMode === 'online_join' ? onlineBattle.roomCode : null}
+          localSlot={0}
+          connectionLabel="Solo Match"
+          roomCode={null}
           reducedMotion={preferences.reducedMotion}
           highContrast={preferences.highContrast}
           showTips={preferences.showTips}
           tacticalTips={tacticalTips}
-          sendCommand={sendCommand}
+          sendCommand={localBattle.sendCommand}
           onOpenOverlay={() => setShowGameMenu(true)}
           onExit={exitCurrentMatch}
         />
@@ -288,11 +222,7 @@ export function App() {
 
       <Modal open={showGameMenu} eyebrow="Paused" title="Match Menu" onClose={() => setShowGameMenu(false)}>
         <div className={styles.modalStack}>
-          <p className={styles.modalText}>
-            {selectedMode === 'local'
-              ? 'P1 uses WASD + Q/E + Space. P2 uses arrows + ,/. + Enter.'
-              : 'Move with WASD, rotate with Q/E, and drop with Space.'}
-          </p>
+          <p className={styles.modalText}>Move with WASD, rotate with Q/E, and drop with Space.</p>
           <div className={styles.modalActions}>
             <button type="button" className="btn btn--secondary" onClick={() => setShowGameMenu(false)}>
               Resume
@@ -311,11 +241,9 @@ export function App() {
         <div className={styles.modalStack}>
           <p className={styles.modalText}>{currentMatch?.events.find((event) => event.type === 'winner_declared')?.message ?? 'Match resolved.'}</p>
           <div className={styles.modalActions}>
-            {selectedMode === 'solo' || selectedMode === 'local' ? (
-              <button type="button" className="btn btn--primary" onClick={rematchCurrentMode}>
-                Rematch
-              </button>
-            ) : null}
+            <button type="button" className="btn btn--primary" onClick={rematchCurrentMode}>
+              Rematch
+            </button>
             <button type="button" className="btn btn--ghost" onClick={exitCurrentMatch}>
               Return To Menu
             </button>

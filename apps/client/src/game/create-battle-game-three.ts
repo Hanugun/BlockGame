@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import {
-  getPieceCells,
+  expandPieceToSimulation,
+  getPieceLockTicks,
   getPieceDefinition,
   type MatchState,
 } from '../lib/core.js';
@@ -27,7 +28,7 @@ function toLocal(x: number, y: number, width: number, height: number): { x: numb
 }
 
 function terrainY(height: number): number {
-  return 0.1 + (height * 0.14);
+  return 0.07 + (height * 0.22);
 }
 
 class ThreeSoloScene {
@@ -35,30 +36,49 @@ class ThreeSoloScene {
   private readonly scene: THREE.Scene;
   private readonly camera: THREE.PerspectiveCamera;
   private readonly parent: HTMLElement;
+  private readonly cameraTarget = new THREE.Vector3(0.08, 0.42, 0.52);
 
   private readonly boardGroup = new THREE.Group();
   private readonly cells: CellMeshes[] = [];
+  private terrainSurface: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshStandardMaterial> | null = null;
+  private terrainSurfaceKey = '';
   private readonly activeProjectionGroup = new THREE.Group();
   private readonly activeProjectionPatches: Array<THREE.Mesh<THREE.BoxGeometry, THREE.MeshBasicMaterial>> = [];
   private readonly activePulseRing: THREE.Mesh<THREE.RingGeometry, THREE.MeshBasicMaterial>;
+  private readonly activePieceGroup = new THREE.Group();
+  private readonly activePieceSegments: Array<THREE.Mesh<THREE.BoxGeometry, THREE.MeshStandardMaterial>> = [];
 
-  private readonly terrainGeometry = new THREE.BoxGeometry(0.64, 1, 0.64);
+  private readonly terrainGeometry = new THREE.BoxGeometry(0.67, 1, 0.67);
   private readonly waterGeometry = new THREE.CylinderGeometry(0.27, 0.31, 1, 18);
   private readonly holeGeometry = new THREE.CylinderGeometry(0.19, 0.26, 0.14, 18);
   private readonly mineGeometry = new THREE.SphereGeometry(0.12, 16, 16);
   private readonly iceGeometry = new THREE.RingGeometry(0.19, 0.29, 24);
   private readonly projectionPatchGeometry = new THREE.BoxGeometry(0.62, 0.02, 0.62);
+  private readonly activePieceGeometry = new THREE.BoxGeometry(0.58, 0.2, 0.58);
 
   private readonly terrainMaterial = new THREE.MeshStandardMaterial({
-    color: new THREE.Color(0xb77848),
-    roughness: 0.92,
+    color: new THREE.Color(0x875134),
+    roughness: 0.96,
     metalness: 0.05,
   });
   private readonly terrainPeakMaterial = new THREE.MeshStandardMaterial({
-    color: new THREE.Color(0xcc8f57),
-    roughness: 0.84,
+    color: new THREE.Color(0xa86845),
+    roughness: 0.88,
     metalness: 0.03,
   });
+  private readonly terrainSurfaceMaterial = new THREE.MeshStandardMaterial({
+    color: new THREE.Color(0xc98b56),
+    vertexColors: true,
+    transparent: false,
+    opacity: 1,
+    roughness: 0.91,
+    metalness: 0.02,
+    flatShading: false,
+  });
+  private readonly terrainLowColor = new THREE.Color(0x8b5533);
+  private readonly terrainMidColor = new THREE.Color(0xc8844c);
+  private readonly terrainHighColor = new THREE.Color(0xf0c07b);
+  private readonly terrainColorScratch = new THREE.Color();
   private readonly waterMaterial = new THREE.MeshPhysicalMaterial({
     color: new THREE.Color(0x6dd4ff),
     roughness: 0.1,
@@ -121,12 +141,11 @@ class ThreeSoloScene {
     this.parent.style.touchAction = 'none';
 
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x2e0a7e);
-    this.scene.fog = new THREE.Fog(0x2a0a6f, 10, 42);
+    this.scene.background = new THREE.Color(0x35109a);
+    this.scene.fog = new THREE.Fog(0x2d0d84, 14, 42);
 
-    this.camera = new THREE.PerspectiveCamera(44, 16 / 9, 0.1, 120);
-    this.camera.position.set(0, 10.4, 11.7);
-    this.camera.lookAt(0, 1.5, 0);
+    this.camera = new THREE.PerspectiveCamera(29, 4 / 3, 0.1, 120);
+    this.applyBoardCamera();
 
     this.renderer = new THREE.WebGLRenderer({
       antialias: true,
@@ -162,20 +181,20 @@ class ThreeSoloScene {
     this.scene.add(nebula);
 
     const baseDisk = new THREE.Mesh(
-      this.track(new THREE.CylinderGeometry(5.2, 6.2, 1.6, 44)),
+      this.track(new THREE.CylinderGeometry(7.2, 8.6, 2.4, 52)),
       this.track(new THREE.MeshStandardMaterial({
         color: new THREE.Color(0x5c3122),
         roughness: 0.93,
         metalness: 0,
       })),
     );
-    baseDisk.position.y = -0.95;
+    baseDisk.position.y = -1.18;
     baseDisk.castShadow = true;
     baseDisk.receiveShadow = true;
     this.boardGroup.add(baseDisk);
 
     const rim = new THREE.Mesh(
-      this.track(new THREE.TorusGeometry(6.3, 0.09, 10, 80)),
+      this.track(new THREE.TorusGeometry(8.25, 0.11, 12, 88)),
       this.track(new THREE.MeshStandardMaterial({
         color: new THREE.Color(0x2ecfb0),
         emissive: new THREE.Color(0x1a8f7f),
@@ -188,6 +207,20 @@ class ThreeSoloScene {
     rim.position.y = 0.03;
     this.boardGroup.add(rim);
 
+    const boardDeck = new THREE.Mesh(
+      this.track(new THREE.PlaneGeometry(13.4, 13.4)),
+      this.track(new THREE.MeshStandardMaterial({
+        color: new THREE.Color(0x7b4730),
+        roughness: 0.96,
+        metalness: 0,
+      })),
+    );
+    boardDeck.rotation.x = -Math.PI / 2;
+    boardDeck.position.y = 0.035;
+    boardDeck.receiveShadow = true;
+    this.boardGroup.add(boardDeck);
+
+    this.boardGroup.scale.setScalar(0.68);
     this.scene.add(this.boardGroup);
 
     for (let index = 0; index < 36; index += 1) {
@@ -195,6 +228,24 @@ class ThreeSoloScene {
       patch.visible = false;
       this.activeProjectionGroup.add(patch);
       this.activeProjectionPatches.push(patch);
+    }
+
+    for (let index = 0; index < 36; index += 1) {
+      const segment = new THREE.Mesh(
+        this.activePieceGeometry,
+        this.track(new THREE.MeshStandardMaterial({
+          color: new THREE.Color(0xf8b04a),
+          emissive: new THREE.Color(0xb84a22),
+          emissiveIntensity: 0.45,
+          roughness: 0.48,
+          metalness: 0.08,
+        })),
+      );
+      segment.castShadow = true;
+      segment.receiveShadow = true;
+      segment.visible = false;
+      this.activePieceGroup.add(segment);
+      this.activePieceSegments.push(segment);
     }
 
     this.activePulseRing = new THREE.Mesh(
@@ -210,13 +261,14 @@ class ThreeSoloScene {
     this.activePulseRing.visible = false;
     this.activeProjectionGroup.add(this.activePulseRing);
 
-    this.scene.add(this.activeProjectionGroup);
+    this.boardGroup.add(this.activeProjectionGroup);
+    this.boardGroup.add(this.activePieceGroup);
 
     const hemi = new THREE.HemisphereLight(0xf0e1ff, 0x3e1f13, 0.68);
     this.scene.add(hemi);
 
-    const sun = new THREE.DirectionalLight(0xfff3e0, 1.38);
-    sun.position.set(8, 12, 8);
+    const sun = new THREE.DirectionalLight(0xfff3e0, 1.62);
+    sun.position.set(5.6, 11.4, 3.2);
     sun.castShadow = true;
     sun.shadow.mapSize.set(1024, 1024);
     sun.shadow.camera.left = -12;
@@ -225,8 +277,8 @@ class ThreeSoloScene {
     sun.shadow.camera.bottom = -12;
     this.scene.add(sun);
 
-    const fill = new THREE.DirectionalLight(0x84b0ff, 0.44);
-    fill.position.set(-8, 6, -8);
+    const fill = new THREE.DirectionalLight(0x84b0ff, 0.18);
+    fill.position.set(-7.8, 8.8, -4.2);
     this.scene.add(fill);
 
     this.parent.addEventListener('pointerdown', () => {
@@ -303,6 +355,11 @@ class ThreeSoloScene {
     this.render(now);
   };
 
+  private applyBoardCamera(): void {
+    this.camera.position.set(0.08, 16.8, 24.4);
+    this.camera.lookAt(this.cameraTarget);
+  }
+
   private getRevision(snapshot: MatchState): string {
     const player = snapshot.players[0];
     return [
@@ -341,6 +398,142 @@ class ThreeSoloScene {
     }
   }
 
+  private ensureTerrainSurface(width: number, height: number): void {
+    const nextKey = `${width}x${height}`;
+    if (this.terrainSurface && this.terrainSurfaceKey === nextKey) {
+      return;
+    }
+
+    if (this.terrainSurface) {
+      this.boardGroup.remove(this.terrainSurface);
+      this.terrainSurface = null;
+    }
+
+    const geometry = this.track(new THREE.PlaneGeometry(
+      Math.max(0.66, (width - 1) * 0.66),
+      Math.max(0.66, (height - 1) * 0.66),
+      Math.max(1, width - 1),
+      Math.max(1, height - 1),
+    ));
+    geometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(width * height * 3), 3));
+    const surface = new THREE.Mesh(geometry, this.terrainSurfaceMaterial);
+    surface.rotation.x = -Math.PI / 2;
+    surface.position.y = 0.01;
+    surface.receiveShadow = true;
+    surface.castShadow = true;
+    surface.renderOrder = 1;
+    this.boardGroup.add(surface);
+    this.terrainSurface = surface;
+    this.terrainSurfaceKey = nextKey;
+  }
+
+  private blendedSurfaceHeight(
+    player: MatchState['players'][0],
+    previousPlayer: MatchState['players'][0],
+    x: number,
+    y: number,
+    alpha: number,
+  ): number {
+    let totalWeight = 0;
+    let totalHeight = 0;
+    let centerHeight = 0;
+
+    for (let dy = -1; dy <= 1; dy += 1) {
+      for (let dx = -1; dx <= 1; dx += 1) {
+        const sampleX = x + dx;
+        const sampleY = y + dy;
+        if (sampleX < 0 || sampleY < 0 || sampleX >= player.board.width || sampleY >= player.board.height) {
+          continue;
+        }
+
+        const sampleIndex = (sampleY * player.board.width) + sampleX;
+        const next = player.board.cells[sampleIndex]!;
+        const previous = previousPlayer.board.cells[sampleIndex] ?? next;
+        const blendedHeight = previous.height + ((next.height - previous.height) * alpha);
+        const blendedHole = previous.holeDepth + ((next.holeDepth - previous.holeDepth) * alpha);
+        const distance = Math.abs(dx) + Math.abs(dy);
+        const weight = distance === 0 ? 0.46 : distance === 1 ? 0.16 : 0.09;
+        const holePenalty = blendedHole > 0 ? blendedHole * 0.16 : 0;
+        if (distance === 0) {
+          centerHeight = blendedHeight;
+        }
+
+        totalHeight += (terrainY(Math.max(0, blendedHeight)) - holePenalty) * weight;
+        totalWeight += weight;
+      }
+    }
+
+    const averagedHeight = totalHeight / Math.max(0.0001, totalWeight);
+    const centerSurfaceHeight = terrainY(Math.max(0, centerHeight));
+    return averagedHeight + 0.012 + (Math.max(0, centerSurfaceHeight - averagedHeight) * 0.48) + (Math.max(0, centerHeight) * 0.012);
+  }
+
+  private isTerrainCliffCell(player: MatchState['players'][0], x: number, y: number, height: number): boolean {
+    if (height <= 0.04) {
+      return false;
+    }
+
+    const neighbors = [
+      { x: x - 1, y },
+      { x: x + 1, y },
+      { x, y: y - 1 },
+      { x, y: y + 1 },
+    ];
+
+    for (const neighbor of neighbors) {
+      if (neighbor.x < 0 || neighbor.y < 0 || neighbor.x >= player.board.width || neighbor.y >= player.board.height) {
+        return true;
+      }
+      const neighborIndex = (neighbor.y * player.board.width) + neighbor.x;
+      const neighborHeight = player.board.cells[neighborIndex]!.height;
+      if (height - neighborHeight >= 0.42) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  private updateTerrainSurface(
+    player: MatchState['players'][0],
+    previousPlayer: MatchState['players'][0],
+    alpha: number,
+  ): void {
+    if (!this.terrainSurface) {
+      return;
+    }
+
+    const position = this.terrainSurface.geometry.attributes.position as THREE.BufferAttribute;
+    const color = this.terrainSurface.geometry.attributes.color as THREE.BufferAttribute;
+    let vertexIndex = 0;
+
+    // Smooth height samples over the cell stack so the island reads as dunes and ridges instead of exposed cubes.
+    for (let y = 0; y < player.board.height; y += 1) {
+      for (let x = 0; x < player.board.width; x += 1) {
+        const local = toLocal(x, y, player.board.width, player.board.height);
+        const surfaceHeight = this.blendedSurfaceHeight(player, previousPlayer, x, y, alpha);
+        position.setXYZ(
+          vertexIndex,
+          local.x,
+          -local.z,
+          surfaceHeight,
+        );
+        const normalizedHeight = clamp((surfaceHeight - 0.05) / 0.7, 0, 1);
+        if (normalizedHeight <= 0.6) {
+          this.terrainColorScratch.copy(this.terrainLowColor).lerp(this.terrainMidColor, normalizedHeight / 0.6);
+        } else {
+          this.terrainColorScratch.copy(this.terrainMidColor).lerp(this.terrainHighColor, (normalizedHeight - 0.6) / 0.4);
+        }
+        color.setXYZ(vertexIndex, this.terrainColorScratch.r, this.terrainColorScratch.g, this.terrainColorScratch.b);
+        vertexIndex += 1;
+      }
+    }
+
+    position.needsUpdate = true;
+    color.needsUpdate = true;
+    this.terrainSurface.geometry.computeVertexNormals();
+  }
+
   private render(now: number): void {
     const snapshot = this.currentSnapshot;
     if (!snapshot || snapshot.mode !== 'solo') {
@@ -353,6 +546,7 @@ class ThreeSoloScene {
     const previousPlayer = previous.players[0];
 
     this.ensureCells(player.board.width, player.board.height);
+    this.ensureTerrainSurface(player.board.width, player.board.height);
 
     const duration = this.model.reducedMotion ? 1 : 100;
     const alpha = clamp((now - this.transitionAt) / duration, 0, 1);
@@ -370,9 +564,13 @@ class ThreeSoloScene {
         const holeDepth = prev.holeDepth + ((next.holeDepth - prev.holeDepth) * alpha);
 
         const topY = terrainY(height);
-        mesh.terrain.position.set(local.x, topY * 0.5, local.z);
-        mesh.terrain.scale.set(1, topY, 1);
-        mesh.terrain.material = height >= 5 ? this.terrainPeakMaterial : this.terrainMaterial;
+        const terrainVisible = this.isTerrainCliffCell(player, x, y, height) || holeDepth > 0.1;
+        mesh.terrain.visible = terrainVisible;
+        if (terrainVisible) {
+          mesh.terrain.position.set(local.x, topY * 0.5, local.z);
+          mesh.terrain.scale.set(1, topY, 1);
+          mesh.terrain.material = height >= 5 ? this.terrainPeakMaterial : this.terrainMaterial;
+        }
 
         mesh.hole.visible = holeDepth > 0.1;
         if (mesh.hole.visible) {
@@ -414,11 +612,10 @@ class ThreeSoloScene {
       mesh.ice.visible = false;
     }
 
+    this.updateTerrainSurface(player, previousPlayer, alpha);
     this.updateProjection(player, now);
 
-    const orbit = this.model.reducedMotion ? 0 : Math.sin(now * 0.00022) * 0.35;
-    this.camera.position.set(orbit, 10.2, 11.8);
-    this.camera.lookAt(0, 1.5, 0);
+    this.applyBoardCamera();
 
     this.renderer.render(this.scene, this.camera);
   }
@@ -429,57 +626,66 @@ class ThreeSoloScene {
       for (const patch of this.activeProjectionPatches) {
         patch.visible = false;
       }
+      for (const segment of this.activePieceSegments) {
+        segment.visible = false;
+      }
       this.activePulseRing.visible = false;
       return;
     }
 
-    const macroCells = getPieceCells(activePiece.kind, activePiece.rotation).map((cell) => ({
-      x: activePiece.anchor.x + cell.x,
-      y: activePiece.anchor.y + cell.y,
-    }));
-
     const color = new THREE.Color(getPieceDefinition(activePiece.kind).color);
     const centerAccumulator = { x: 0, z: 0, count: 0 };
+    const simulationCells = expandPieceToSimulation(
+      player.board,
+      activePiece.kind,
+      activePiece.rotation,
+      activePiece.anchor,
+      player.cellScale,
+    );
+    const lockTicks = Math.max(1, getPieceLockTicks('solo', this.currentSnapshot?.phase ?? 'calm'));
+    const descentProgress = 1 - clamp(activePiece.ticksRemaining / lockTicks, 0, 1);
+    const hoverWave = this.model.reducedMotion ? 0 : Math.sin(now * 0.006) * 0.06;
+    let maxTerrainHeight = 0;
     let patchIndex = 0;
 
-    for (const macroCell of macroCells) {
-      for (let dy = 0; dy < player.cellScale; dy += 1) {
-        for (let dx = 0; dx < player.cellScale; dx += 1) {
-          const simulationX = (macroCell.x * player.cellScale) + dx;
-          const simulationY = (macroCell.y * player.cellScale) + dy;
-          if (simulationX < 0 || simulationY < 0 || simulationX >= player.board.width || simulationY >= player.board.height) {
-            continue;
-          }
-          const patch = this.activeProjectionPatches[patchIndex]!;
-          const local = toLocal(simulationX, simulationY, player.board.width, player.board.height);
-          const cellIndex = (simulationY * player.board.width) + simulationX;
-          const terrainHeight = terrainY(player.board.cells[cellIndex]!.height);
-
-          patch.visible = true;
-          patch.position.set(local.x, terrainHeight + 0.05, local.z);
-          patch.material.color.copy(color);
-          patch.material.opacity = clamp(0.3 + (Math.sin((now * 0.005) + patchIndex) * 0.08), 0.22, 0.44);
-
-          centerAccumulator.x += local.x;
-          centerAccumulator.z += local.z;
-          centerAccumulator.count += 1;
-          patchIndex += 1;
-
-          if (patchIndex >= this.activeProjectionPatches.length) {
-            break;
-          }
-        }
-        if (patchIndex >= this.activeProjectionPatches.length) {
-          break;
-        }
-      }
+    for (const simulationCell of simulationCells) {
       if (patchIndex >= this.activeProjectionPatches.length) {
         break;
       }
+      const patch = this.activeProjectionPatches[patchIndex]!;
+      const local = toLocal(simulationCell.x, simulationCell.y, player.board.width, player.board.height);
+      const cellIndex = (simulationCell.y * player.board.width) + simulationCell.x;
+      const terrainHeight = terrainY(player.board.cells[cellIndex]!.height);
+      maxTerrainHeight = Math.max(maxTerrainHeight, terrainHeight);
+
+      patch.visible = true;
+      patch.position.set(local.x, terrainHeight + 0.05, local.z);
+      patch.material.color.copy(new THREE.Color(0xff8fb0));
+      patch.material.opacity = clamp(0.34 + (Math.sin((now * 0.005) + patchIndex) * 0.07), 0.26, 0.46);
+
+      centerAccumulator.x += local.x;
+      centerAccumulator.z += local.z;
+      centerAccumulator.count += 1;
+      patchIndex += 1;
+    }
+
+    const pieceLift = 0.92 - (descentProgress * 0.52) + hoverWave;
+    for (let index = 0; index < patchIndex; index += 1) {
+      const patch = this.activeProjectionPatches[index]!;
+      const segment = this.activePieceSegments[index]!;
+      segment.visible = true;
+      segment.position.set(
+        patch.position.x,
+        patch.position.y + pieceLift + ((index % 3) * 0.01),
+        patch.position.z,
+      );
+      segment.material.color.copy(color);
+      segment.material.emissive.copy(color).multiplyScalar(0.32);
     }
 
     for (; patchIndex < this.activeProjectionPatches.length; patchIndex += 1) {
       this.activeProjectionPatches[patchIndex]!.visible = false;
+      this.activePieceSegments[patchIndex]!.visible = false;
     }
 
     if (centerAccumulator.count > 0) {
@@ -487,9 +693,9 @@ class ThreeSoloScene {
       const cz = centerAccumulator.z / centerAccumulator.count;
       const pulse = this.model.reducedMotion ? 0 : Math.sin(now * 0.006) * 0.09;
       this.activePulseRing.visible = true;
-      this.activePulseRing.position.set(cx, 0.54 + pulse, cz);
+      this.activePulseRing.position.set(cx, maxTerrainHeight + 0.14 + pulse, cz);
       this.activePulseRing.scale.setScalar(1.02 + (pulse * 0.6));
-      this.activePulseRing.material.color.copy(color);
+      this.activePulseRing.material.color.copy(new THREE.Color(0xff95bf));
     } else {
       this.activePulseRing.visible = false;
     }

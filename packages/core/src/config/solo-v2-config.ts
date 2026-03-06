@@ -23,7 +23,15 @@ export interface SoloV2Config {
   progression: {
     waterUnlockPiecesPlaced: number;
     fireUnlockPiecesPlaced: number;
+    terrainReductionUnlockPiecesPlaced: number;
     bombUnlockPiecesPlaced: number;
+    rainUnlockScore: number;
+    mineUnlockScore: number;
+    iceUnlockScore: number;
+  };
+  hazards: {
+    randomTerrainDamageEnabled: boolean;
+    bossAttacksEnabled: boolean;
   };
   bonus: {
     lakeMateMinDepth: number;
@@ -32,7 +40,7 @@ export interface SoloV2Config {
     rainbowScoreMultiplierBonus: number;
   };
   story: {
-    bossAttackCheckpoints: number[];
+    bossAttackScoreThresholds: number[];
   };
 }
 
@@ -51,9 +59,17 @@ export const SOLO_V2_CONFIG: SoloV2Config = {
     autoDecay: false,
   },
   progression: {
-    waterUnlockPiecesPlaced: 9,
-    fireUnlockPiecesPlaced: 17,
-    bombUnlockPiecesPlaced: 25,
+    waterUnlockPiecesPlaced: 5,
+    fireUnlockPiecesPlaced: 8,
+    terrainReductionUnlockPiecesPlaced: 12,
+    bombUnlockPiecesPlaced: 18,
+    rainUnlockScore: 180,
+    mineUnlockScore: 320,
+    iceUnlockScore: 520,
+  },
+  hazards: {
+    randomTerrainDamageEnabled: false,
+    bossAttacksEnabled: false,
   },
   bonus: {
     lakeMateMinDepth: 2,
@@ -62,6 +78,6 @@ export const SOLO_V2_CONFIG: SoloV2Config = {
     rainbowScoreMultiplierBonus: 0.6,
   },
   story: {
-    bossAttackCheckpoints: [0.35, 0.62, 0.84],
+    bossAttackScoreThresholds: [420, 860, 1_360],
   },
 };
