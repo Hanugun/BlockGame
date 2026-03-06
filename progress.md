@@ -586,3 +586,45 @@ Next: Step 2 core config/types and mode-specific board dimensions.
 
 ### Remaining follow-ups
 - The board is much less cluttered now, but if later playtests still feel muddy the next renderer pass should explicitly strengthen only macro ridges / basin rims instead of reintroducing cell-by-cell texture noise.
+
+## 2026-03-07 - Final Cleanup And Codebase Hardening
+
+### Implemented in this pass
+- Reduced the client shell to the actual shipped runtime surface:
+  - `App.tsx`, `game-screen.tsx`, `battle-canvas.tsx`, `use-game-input.ts`, and `render-game-to-text.ts` are now explicitly solo-first / solo-only instead of carrying dead local-online branches.
+  - `game-screen-helpers.ts` now contains only the live solo phase-label helper.
+  - `use-ui-preferences.ts` no longer stores the dead `showTips` preference.
+  - automation parsing no longer carries a fake `rendererOverride` branch for removed Phaser support.
+- Removed dead client runtime/code paths that are no longer part of the shipped or planned investor-demo surface:
+  - Phaser renderer and scene stack
+  - online battle hook/state
+  - lobby screen
+  - non-solo HUD/detail components (`CoreStrip`, `DetailDrawer`, `PieceBadge`, `SoloBonusBoard`, `VersusBoard`)
+  - stale helper modules that only existed for those removed paths
+- Removed the `phaser` dependency from `apps/client/package.json` and updated `package-lock.json`.
+- Strengthened root test reliability:
+  - `npm test` now builds `@aquawetrix/core` first so workspace tests do not depend on stale `dist/` state.
+- Cleaned the repo itself, not just source code:
+  - removed tracked `*.tsbuildinfo`
+  - removed tracked `output/` and `temp/` artifacts
+  - removed tracked one-off `temp-actions-*.json` / temp log files
+  - added ignore rules for generated outputs and build metadata in `.gitignore`
+
+### Validation
+- `npm run lint`: PASS
+- `npm test`: PASS
+- `npm run build`: PASS
+- Required Playwright cleanup smoke pass: PASS
+  - Preview URL: `http://127.0.0.1:4190/?automation=1&autostart=solo&renderer=three&seed=1337`
+  - Artifacts:
+    - `output/web-game-cleanup-pass/shot-0.png`
+    - `output/web-game-cleanup-pass/shot-1.png`
+    - `output/web-game-cleanup-pass/shot-2.png`
+    - `output/web-game-cleanup-pass/state-0.json`
+    - `output/web-game-cleanup-pass/state-1.json`
+    - `output/web-game-cleanup-pass/state-2.json`
+  - No `errors-*.json` files were produced.
+
+### Notes
+- Historical artifact paths mentioned earlier in this log are now just history; validation outputs are no longer tracked in git and should be regenerated locally when needed.
+- The remaining notable technical issue is still the large Three production chunk warning; runtime correctness is intact, but further code-splitting is still open if bundle size becomes the next target.

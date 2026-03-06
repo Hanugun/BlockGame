@@ -4,11 +4,10 @@ import {
   type MatchState,
 } from '../lib/core.js';
 import { phaseLabel } from '../screens/game-screen-helpers.js';
-import type { AppScreen, MenuMode } from '../ui-types.js';
+import type { AppScreen } from '../ui-types.js';
 
 interface RenderGameToTextInput {
   screen: AppScreen;
-  selectedMode: MenuMode;
   match: MatchState | null;
 }
 
@@ -62,11 +61,11 @@ function buildActiveCells(player: MatchState['players'][number]): Array<{
   return activeCells;
 }
 
-export function renderGameToText({ screen, selectedMode, match }: RenderGameToTextInput): string {
+export function renderGameToText({ screen, match }: RenderGameToTextInput): string {
   if (!match || match.mode !== 'solo') {
     return JSON.stringify({
       screen,
-      selectedMode,
+      selectedMode: 'solo',
       mode: match?.mode ?? null,
       status: match?.status ?? null,
       note: 'No active solo match.',
@@ -107,7 +106,7 @@ export function renderGameToText({ screen, selectedMode, match }: RenderGameToTe
 
   return JSON.stringify({
     screen,
-    selectedMode,
+    selectedMode: 'solo',
     coordinateSystem: {
       origin: 'top-left',
       xAxis: 'right-positive',
@@ -149,7 +148,7 @@ export function renderGameToText({ screen, selectedMode, match }: RenderGameToTe
     },
     hud: {
       scoreText: player.score.toLocaleString(),
-      phaseText: phaseLabel(match.mode, match.phase),
+      phaseText: phaseLabel(match.phase),
       reservoirPercent,
       soloVariant: match.soloVariant,
       queuePreview,

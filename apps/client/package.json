@@ -10,7 +10,6 @@
   },
   "dependencies": {
     "@aquawetrix/core": "file:../../packages/core",
-    "phaser": "3.90.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "three": "^0.183.2"

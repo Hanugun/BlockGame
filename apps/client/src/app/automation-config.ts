@@ -1,9 +1,6 @@
-export type BattleRenderer = 'phaser' | 'three';
-
 export interface AutomationConfig {
   automationEnabled: boolean;
   autostartSolo: boolean;
-  rendererOverride: BattleRenderer | null;
   seed: number | null;
 }
 
@@ -13,17 +10,6 @@ function toBooleanFlag(value: string | null): boolean {
   }
   const normalized = value.trim().toLowerCase();
   return normalized === '1' || normalized === 'true';
-}
-
-function toRenderer(value: string | null): BattleRenderer | null {
-  if (!value) {
-    return null;
-  }
-  const normalized = value.trim().toLowerCase();
-  if (normalized === 'phaser' || normalized === 'three') {
-    return normalized;
-  }
-  return null;
 }
 
 function toSeed(value: string | null): number | null {
@@ -43,7 +29,6 @@ export function parseAutomationConfig(search: string): AutomationConfig {
   return {
     automationEnabled: toBooleanFlag(params.get('automation')),
     autostartSolo: autostart === 'solo',
-    rendererOverride: toRenderer(params.get('renderer')),
     seed: toSeed(params.get('seed')),
   };
 }
@@ -53,7 +38,6 @@ export function readAutomationConfig(): AutomationConfig {
     return {
       automationEnabled: false,
       autostartSolo: false,
-      rendererOverride: null,
       seed: null,
     };
   }

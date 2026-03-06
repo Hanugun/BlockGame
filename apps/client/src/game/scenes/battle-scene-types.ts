@@ -1,12 +1,9 @@
-import type { MatchState, PieceKind, PlayerCommand, PlayerSlot, Rotation, Vec2 } from '../../lib/core.js';
+import type { MatchState, PieceKind, PlayerSlot, Rotation, Vec2 } from '../../lib/core.js';
 
 export interface SceneModel {
-  localSlot: PlayerSlot | null;
   match: MatchState | null;
-  mode: 'solo' | 'local' | 'online';
   reducedMotion: boolean;
   highContrast: boolean;
-  sendCommand: (command: PlayerCommand) => void;
 }
 
 export interface RenderPoint {

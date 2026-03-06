@@ -27,7 +27,7 @@
     "parity:check": "node ./scripts/run-parity-check.mjs",
     "validate:assets": "node ./scripts/validate-assets.mjs",
     "lint": "eslint \"apps/**/*.ts\" \"apps/**/*.tsx\" \"packages/**/*.ts\" --ignore-pattern \"packages/core/src/**/*.test.ts\"",
-    "test": "vitest run --coverage"
+    "test": "npm run build:core && vitest run --coverage"
   },
   "devDependencies": {
     "@eslint/js": "9.39.3",

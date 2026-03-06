@@ -6,7 +6,6 @@ describe('automation config parsing', () => {
     expect(parseAutomationConfig('')).toEqual({
       automationEnabled: false,
       autostartSolo: false,
-      rendererOverride: null,
       seed: null,
     });
   });
@@ -15,16 +14,14 @@ describe('automation config parsing', () => {
     expect(parseAutomationConfig('?automation=1&autostart=solo&renderer=three&seed=7001')).toEqual({
       automationEnabled: true,
       autostartSolo: true,
-      rendererOverride: 'three',
       seed: 7001,
     });
   });
 
-  it('accepts true flag and renderer case variants', () => {
-    expect(parseAutomationConfig('?automation=true&renderer=PHASER')).toEqual({
+  it('accepts true flag and ignores renderer query noise', () => {
+    expect(parseAutomationConfig('?automation=true&renderer=THREE')).toEqual({
       automationEnabled: true,
       autostartSolo: false,
-      rendererOverride: 'phaser',
       seed: null,
     });
   });
@@ -33,7 +30,6 @@ describe('automation config parsing', () => {
     expect(parseAutomationConfig('?automation=1&renderer=webgl&seed=oops')).toEqual({
       automationEnabled: true,
       autostartSolo: false,
-      rendererOverride: null,
       seed: null,
     });
   });

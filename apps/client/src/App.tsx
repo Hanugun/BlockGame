@@ -1,7 +1,6 @@
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { readAutomationConfig } from './app/automation-config.js';
 import { renderGameToText } from './app/render-game-to-text.js';
-import { buildTacticalTips } from './app/tactical-tips.js';
 import { Modal } from './components/modal.js';
 import { useBattleAudio } from './hooks/use-battle-audio.js';
 import { useGameInput } from './hooks/use-game-input.js';
@@ -34,7 +33,6 @@ export function App() {
 
   const localBattle = useLocalBattle();
   const { preferences, updatePreference } = useUiPreferences();
-  const selectedMode = 'solo' as const;
 
   const startSoloMatch = (pilotName: string) => {
     const options: Parameters<typeof localBattle.start>[0] = {
@@ -71,15 +69,10 @@ export function App() {
   }, [profileName]);
 
   const currentMatch = useDeferredValue(localBattle.match);
-  const tacticalTips = useMemo(
-    () => (currentMatch ? buildTacticalTips(currentMatch, 0) : []),
-    [currentMatch],
-  );
   const resultOpen = screen === 'game' && currentMatch?.status === 'complete';
 
   useGameInput({
     screen,
-    selectedMode,
     automationEnabled: automation.automationEnabled,
     showGameMenu,
     showSettings,
@@ -87,8 +80,7 @@ export function App() {
     toggleGameMenu: () => {
       setShowGameMenu((current) => !current);
     },
-    sendLocalCommand: localBattle.sendCommand,
-    sendOnlineCommand: () => {},
+    sendCommand: localBattle.sendCommand,
   });
 
   useEffect(() => {
@@ -98,7 +90,6 @@ export function App() {
 
     window.render_game_to_text = () => renderGameToText({
       screen,
-      selectedMode,
       match: currentMatch,
     });
     window.advanceTime = async (ms: number) => {
@@ -168,16 +159,9 @@ export function App() {
 
       {screen === 'game' ? (
         <GameScreen
-          mode={selectedMode}
           match={currentMatch}
-          localSlot={0}
-          connectionLabel="Solo Match"
-          roomCode={null}
           reducedMotion={preferences.reducedMotion}
           highContrast={preferences.highContrast}
-          showTips={preferences.showTips}
-          tacticalTips={tacticalTips}
-          sendCommand={localBattle.sendCommand}
           onOpenOverlay={() => setShowGameMenu(true)}
           onExit={exitCurrentMatch}
         />
@@ -208,14 +192,6 @@ export function App() {
               onChange={(event) => updatePreference('audioEnabled', event.target.checked)}
             />
             <span>Audio cues</span>
-          </label>
-          <label className={styles.toggle}>
-            <input
-              type="checkbox"
-              checked={preferences.showTips}
-              onChange={(event) => updatePreference('showTips', event.target.checked)}
-            />
-            <span>Show tactical tips</span>
           </label>
         </div>
       </Modal>

@@ -4,4 +4,10 @@ coverage
 .DS_Store
 .vite
 *.log
+*.tsbuildinfo
+output/
+temp/
+temp-*.json
+temp-*.log
+temp-*.pid
 Aqua Aqua Gameplay HD (PS2) _ NO COMMENTARY.mp4

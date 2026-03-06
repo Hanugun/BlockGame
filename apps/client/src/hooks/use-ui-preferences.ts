@@ -6,7 +6,6 @@ export interface UiPreferences {
   reducedMotion: boolean;
   highContrast: boolean;
   audioEnabled: boolean;
-  showTips: boolean;
 }
 
 function loadInitialPreferences(): UiPreferences {
@@ -15,7 +14,6 @@ function loadInitialPreferences(): UiPreferences {
       reducedMotion: false,
       highContrast: false,
       audioEnabled: true,
-      showTips: true,
     };
   }
 
@@ -28,7 +26,6 @@ function loadInitialPreferences(): UiPreferences {
         reducedMotion: prefersReducedMotion,
         highContrast: false,
         audioEnabled: true,
-        showTips: true,
       };
     }
     const parsed = JSON.parse(raw) as Partial<UiPreferences>;
@@ -36,14 +33,12 @@ function loadInitialPreferences(): UiPreferences {
       reducedMotion: parsed.reducedMotion ?? prefersReducedMotion,
       highContrast: parsed.highContrast ?? false,
       audioEnabled: parsed.audioEnabled ?? true,
-      showTips: parsed.showTips ?? true,
     };
   } catch {
     return {
       reducedMotion: prefersReducedMotion,
       highContrast: false,
       audioEnabled: true,
-      showTips: true,
     };
   }
 }

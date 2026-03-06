@@ -1,34 +1,28 @@
 import { useEffect, useRef } from 'react';
-import type { MatchState, PlayerCommand } from '../lib/core.js';
+import type { MatchState } from '../lib/core.js';
 import type { BattleGameHandle } from '../game/create-battle-game.js';
 
 interface BattleCanvasProps {
-  localSlot: 0 | 1 | null;
   match: MatchState | null;
-  mode: 'solo' | 'local' | 'online';
   reducedMotion: boolean;
   highContrast: boolean;
-  sendCommand: (command: PlayerCommand) => void;
   className?: string | undefined;
 }
 
 export function BattleCanvas({
-  localSlot,
   match,
-  mode,
   reducedMotion,
   highContrast,
-  sendCommand,
   className,
 }: BattleCanvasProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const handleRef = useRef<BattleGameHandle | null>(null);
-  const modelRef = useRef({ localSlot, match, mode, reducedMotion, highContrast, sendCommand });
+  const modelRef = useRef({ match, reducedMotion, highContrast });
 
   useEffect(() => {
-    modelRef.current = { localSlot, match, mode, reducedMotion, highContrast, sendCommand };
+    modelRef.current = { match, reducedMotion, highContrast };
     handleRef.current?.scene.setModel(modelRef.current);
-  }, [localSlot, match, mode, reducedMotion, highContrast, sendCommand]);
+  }, [match, reducedMotion, highContrast]);
 
   useEffect(() => {
     if (!containerRef.current || handleRef.current) {

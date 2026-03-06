@@ -6,7 +6,6 @@ describe('renderGameToText', () => {
   it('returns a concise non-solo payload when no solo match is active', () => {
     const text = renderGameToText({
       screen: 'menu',
-      selectedMode: 'solo',
       match: null,
     });
     const parsed = JSON.parse(text) as Record<string, unknown>;
@@ -45,7 +44,6 @@ describe('renderGameToText', () => {
 
     const text = renderGameToText({
       screen: 'game',
-      selectedMode: 'solo',
       match,
     });
 

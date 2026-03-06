@@ -119,12 +119,9 @@ class ThreeSoloScene {
   private readonly disposer: Array<THREE.Material | THREE.BufferGeometry | THREE.Texture> = [];
 
   private model: SceneModel = {
-    localSlot: 0,
     match: null,
-    mode: 'solo',
     reducedMotion: false,
     highContrast: false,
-    sendCommand: () => {},
   };
 
   private previousSnapshot: MatchState | null = null;

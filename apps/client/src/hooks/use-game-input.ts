@@ -1,156 +1,54 @@
 import { useEffect } from 'react';
 import type { PlayerCommand } from '../lib/core.js';
-import type { AppScreen, MenuMode } from '../ui-types.js';
+import type { AppScreen } from '../ui-types.js';
 
 interface UseGameInputOptions {
   screen: AppScreen;
-  selectedMode: MenuMode;
   automationEnabled: boolean;
   showGameMenu: boolean;
   showSettings: boolean;
   resultOpen: boolean;
   toggleGameMenu: () => void;
-  sendLocalCommand: (command: PlayerCommand) => void;
-  sendOnlineCommand: (command: { type: 'move'; dx: -1 | 0 | 1; dy: -1 | 0 | 1 } | { type: 'rotate'; delta: -1 | 1 } | { type: 'drop' }) => void;
-}
-
-function isOnlineMode(mode: MenuMode): boolean {
-  return mode === 'online_host' || mode === 'online_join';
-}
-
-function toOnlineCommand(command: PlayerCommand): { type: 'move'; dx: -1 | 0 | 1; dy: -1 | 0 | 1 } | { type: 'rotate'; delta: -1 | 1 } | { type: 'drop' } {
-  switch (command.type) {
-    case 'move':
-      return { type: 'move', dx: command.dx, dy: command.dy };
-    case 'rotate':
-      return { type: 'rotate', delta: command.delta };
-    case 'drop':
-      return { type: 'drop' };
-    default:
-      command satisfies never;
-      return { type: 'drop' };
-  }
-}
-
-function dispatchCommand(
-  mode: MenuMode,
-  command: PlayerCommand,
-  sendLocalCommand: (command: PlayerCommand) => void,
-  sendOnlineCommand: (command: { type: 'move'; dx: -1 | 0 | 1; dy: -1 | 0 | 1 } | { type: 'rotate'; delta: -1 | 1 } | { type: 'drop' }) => void,
-): void {
-  if (isOnlineMode(mode)) {
-    sendOnlineCommand(toOnlineCommand(command));
-    return;
-  }
-  sendLocalCommand(command);
+  sendCommand: (command: PlayerCommand) => void;
 }
 
 function fireMappedCommand(
-  mode: MenuMode,
   code: string,
   repeat: boolean,
   automationEnabled: boolean,
-  sendLocalCommand: (command: PlayerCommand) => void,
-  sendOnlineCommand: (command: { type: 'move'; dx: -1 | 0 | 1; dy: -1 | 0 | 1 } | { type: 'rotate'; delta: -1 | 1 } | { type: 'drop' }) => void,
+  sendCommand: (command: PlayerCommand) => void,
 ): boolean {
-  if (mode === 'local') {
-    switch (code) {
-      case 'KeyW':
-        dispatchCommand(mode, { type: 'move', slot: 0, dx: 0, dy: -1 }, sendLocalCommand, sendOnlineCommand);
-        return true;
-      case 'KeyS':
-        dispatchCommand(mode, { type: 'move', slot: 0, dx: 0, dy: 1 }, sendLocalCommand, sendOnlineCommand);
-        return true;
-      case 'KeyA':
-        dispatchCommand(mode, { type: 'move', slot: 0, dx: -1, dy: 0 }, sendLocalCommand, sendOnlineCommand);
-        return true;
-      case 'KeyD':
-        dispatchCommand(mode, { type: 'move', slot: 0, dx: 1, dy: 0 }, sendLocalCommand, sendOnlineCommand);
-        return true;
-      case 'KeyQ':
-        if (repeat) {
-          return true;
-        }
-        dispatchCommand(mode, { type: 'rotate', slot: 0, delta: -1 }, sendLocalCommand, sendOnlineCommand);
-        return true;
-      case 'KeyE':
-        if (repeat) {
-          return true;
-        }
-        dispatchCommand(mode, { type: 'rotate', slot: 0, delta: 1 }, sendLocalCommand, sendOnlineCommand);
-        return true;
-      case 'Space':
-        if (repeat) {
-          return true;
-        }
-        dispatchCommand(mode, { type: 'drop', slot: 0 }, sendLocalCommand, sendOnlineCommand);
-        return true;
-      case 'ArrowUp':
-        dispatchCommand(mode, { type: 'move', slot: 1, dx: 0, dy: -1 }, sendLocalCommand, sendOnlineCommand);
-        return true;
-      case 'ArrowDown':
-        dispatchCommand(mode, { type: 'move', slot: 1, dx: 0, dy: 1 }, sendLocalCommand, sendOnlineCommand);
-        return true;
-      case 'ArrowLeft':
-        dispatchCommand(mode, { type: 'move', slot: 1, dx: -1, dy: 0 }, sendLocalCommand, sendOnlineCommand);
-        return true;
-      case 'ArrowRight':
-        dispatchCommand(mode, { type: 'move', slot: 1, dx: 1, dy: 0 }, sendLocalCommand, sendOnlineCommand);
-        return true;
-      case 'Comma':
-        if (repeat) {
-          return true;
-        }
-        dispatchCommand(mode, { type: 'rotate', slot: 1, delta: -1 }, sendLocalCommand, sendOnlineCommand);
-        return true;
-      case 'Period':
-        if (repeat) {
-          return true;
-        }
-        dispatchCommand(mode, { type: 'rotate', slot: 1, delta: 1 }, sendLocalCommand, sendOnlineCommand);
-        return true;
-      case 'Enter':
-        if (repeat) {
-          return true;
-        }
-        dispatchCommand(mode, { type: 'drop', slot: 1 }, sendLocalCommand, sendOnlineCommand);
-        return true;
-      default:
-        return false;
-    }
-  }
-
   if (automationEnabled) {
     switch (code) {
       case 'ArrowUp':
-        dispatchCommand(mode, { type: 'move', slot: 0, dx: 0, dy: -1 }, sendLocalCommand, sendOnlineCommand);
+        sendCommand({ type: 'move', slot: 0, dx: 0, dy: -1 });
         return true;
       case 'ArrowDown':
-        dispatchCommand(mode, { type: 'move', slot: 0, dx: 0, dy: 1 }, sendLocalCommand, sendOnlineCommand);
+        sendCommand({ type: 'move', slot: 0, dx: 0, dy: 1 });
         return true;
       case 'ArrowLeft':
-        dispatchCommand(mode, { type: 'move', slot: 0, dx: -1, dy: 0 }, sendLocalCommand, sendOnlineCommand);
+        sendCommand({ type: 'move', slot: 0, dx: -1, dy: 0 });
         return true;
       case 'ArrowRight':
-        dispatchCommand(mode, { type: 'move', slot: 0, dx: 1, dy: 0 }, sendLocalCommand, sendOnlineCommand);
+        sendCommand({ type: 'move', slot: 0, dx: 1, dy: 0 });
         return true;
       case 'KeyA':
         if (repeat) {
           return true;
         }
-        dispatchCommand(mode, { type: 'rotate', slot: 0, delta: -1 }, sendLocalCommand, sendOnlineCommand);
+        sendCommand({ type: 'rotate', slot: 0, delta: -1 });
         return true;
       case 'KeyB':
         if (repeat) {
           return true;
         }
-        dispatchCommand(mode, { type: 'rotate', slot: 0, delta: 1 }, sendLocalCommand, sendOnlineCommand);
+        sendCommand({ type: 'rotate', slot: 0, delta: 1 });
         return true;
       case 'Enter':
         if (repeat) {
           return true;
         }
-        dispatchCommand(mode, { type: 'drop', slot: 0 }, sendLocalCommand, sendOnlineCommand);
+        sendCommand({ type: 'drop', slot: 0 });
         return true;
       default:
         break;
@@ -159,34 +57,34 @@ function fireMappedCommand(
 
   switch (code) {
     case 'KeyW':
-      dispatchCommand(mode, { type: 'move', slot: 0, dx: 0, dy: -1 }, sendLocalCommand, sendOnlineCommand);
+      sendCommand({ type: 'move', slot: 0, dx: 0, dy: -1 });
       return true;
     case 'KeyS':
-      dispatchCommand(mode, { type: 'move', slot: 0, dx: 0, dy: 1 }, sendLocalCommand, sendOnlineCommand);
+      sendCommand({ type: 'move', slot: 0, dx: 0, dy: 1 });
       return true;
     case 'KeyA':
-      dispatchCommand(mode, { type: 'move', slot: 0, dx: -1, dy: 0 }, sendLocalCommand, sendOnlineCommand);
+      sendCommand({ type: 'move', slot: 0, dx: -1, dy: 0 });
       return true;
     case 'KeyD':
-      dispatchCommand(mode, { type: 'move', slot: 0, dx: 1, dy: 0 }, sendLocalCommand, sendOnlineCommand);
+      sendCommand({ type: 'move', slot: 0, dx: 1, dy: 0 });
       return true;
     case 'KeyQ':
       if (repeat) {
         return true;
       }
-      dispatchCommand(mode, { type: 'rotate', slot: 0, delta: -1 }, sendLocalCommand, sendOnlineCommand);
+      sendCommand({ type: 'rotate', slot: 0, delta: -1 });
       return true;
     case 'KeyE':
       if (repeat) {
         return true;
       }
-      dispatchCommand(mode, { type: 'rotate', slot: 0, delta: 1 }, sendLocalCommand, sendOnlineCommand);
+      sendCommand({ type: 'rotate', slot: 0, delta: 1 });
       return true;
     case 'Space':
       if (repeat) {
         return true;
       }
-      dispatchCommand(mode, { type: 'drop', slot: 0 }, sendLocalCommand, sendOnlineCommand);
+      sendCommand({ type: 'drop', slot: 0 });
       return true;
     default:
       return false;
@@ -195,14 +93,12 @@ function fireMappedCommand(
 
 export function useGameInput({
   screen,
-  selectedMode,
   automationEnabled,
   showGameMenu,
   showSettings,
   resultOpen,
   toggleGameMenu,
-  sendLocalCommand,
-  sendOnlineCommand,
+  sendCommand,
 }: UseGameInputOptions): void {
   useEffect(() => {
     if (screen !== 'game') {
@@ -264,7 +160,7 @@ export function useGameInput({
         event.preventDefault();
         return;
       }
-      if (!fireMappedCommand(selectedMode, code, event.repeat, automationEnabled, sendLocalCommand, sendOnlineCommand)) {
+      if (!fireMappedCommand(code, event.repeat, automationEnabled, sendCommand)) {
         return;
       }
       event.preventDefault();
@@ -288,7 +184,7 @@ export function useGameInput({
 
     const repeatTimer = window.setInterval(() => {
       for (const code of pressedMoves) {
-        fireMappedCommand(selectedMode, code, false, automationEnabled, sendLocalCommand, sendOnlineCommand);
+        fireMappedCommand(code, false, automationEnabled, sendCommand);
       }
     }, 95);
 
@@ -307,5 +203,5 @@ export function useGameInput({
       document.removeEventListener('keyup', handleKeyUp, listenerOptions);
       window.removeEventListener('blur', handleBlur);
     };
-  }, [automationEnabled, resultOpen, screen, selectedMode, sendLocalCommand, sendOnlineCommand, showGameMenu, showSettings]);
+  }, [automationEnabled, resultOpen, screen, sendCommand, showGameMenu, showSettings]);
 }

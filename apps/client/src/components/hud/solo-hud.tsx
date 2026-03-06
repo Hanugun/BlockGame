@@ -117,7 +117,7 @@ export function SoloHud({ match, primary, onOpenOverlay }: SoloHudProps) {
         <button type="button" className={styles.menuButton} onClick={onOpenOverlay}>
           Menu
         </button>
-        <div className={styles.phasePill}>{phaseLabel(match.mode, match.phase)}</div>
+        <div className={styles.phasePill}>{phaseLabel(match.phase)}</div>
       </div>
 
       <aside className={styles.reservoir}>
